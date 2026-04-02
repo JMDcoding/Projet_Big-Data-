@@ -126,24 +126,36 @@ class LightningDashboard:
             today = pd.Timestamp.now().date()
             start_date = (pd.Timestamp.now() - pd.Timedelta(days=7)).date()
             
+            # Minimum lightning intensity filter
+            min_intensity = st.slider(
+                "Minimum Lightning Intensity",
+                min_value=0.0,
+                max_value=100.0,
+                value=0.0,
+                step=5.0
+            )
+            
+            # Time scale selector
+            time_scale = st.selectbox(
+                "Lightning Timeline Scale",
+                ["Hourly", "Daily"],
+                index=1,
+                help="Choose the time aggregation for the timeline graph"
+            )
+            
+            # Add spacing before date picker
+            st.divider()
+            
+            # Date range filter (moved to bottom for better accessibility)
+            date_range = st.date_input(
+                "📅 Select Date Range",
+                value=(start_date, today)
+            )
+            
             filters = {
-                "date_range": st.date_input(
-                    "Select Date Range",
-                    value=(start_date, today)
-                ),
-                "min_intensity": st.slider(
-                    "Minimum Lightning Intensity",
-                    min_value=0.0,
-                    max_value=100.0,
-                    value=0.0,
-                    step=5.0
-                ),
-                "time_scale": st.selectbox(
-                    "Lightning Timeline Scale",
-                    ["Hourly", "Daily"],
-                    index=1,
-                    help="Choose the time aggregation for the timeline graph"
-                ),
+                "date_range": date_range,
+                "min_intensity": min_intensity,
+                "time_scale": time_scale,
             }
             
             return filters
