@@ -374,7 +374,7 @@ class DataWarehouse:
         Returns:
             List of lightning records
         """
-        query = "SELECT * FROM lightning_strikes WHERE 1=1"
+        query = "SELECT * FROM lightning WHERE 1=1"
         params = []
         
         if filters:

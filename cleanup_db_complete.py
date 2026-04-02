@@ -48,7 +48,7 @@ def cleanup_all_data(host, port, database, user, password):
         cursor = conn.cursor()
         
         # List all tables to delete
-        tables = ['trajectories', 'disruptions', 'flights', 'lightning']
+        tables = ['lightning', 'flight_disruptions']
         
         print("\n🗑️  SUPPRESSION DES DONNÉES...")
         print("-" * 70)

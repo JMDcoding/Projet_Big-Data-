@@ -25,7 +25,7 @@ try:
     print(f"Flights count: {count}")
     
     # Check lightning
-    cursor.execute("SELECT COUNT(*) FROM lightning_strikes")
+    cursor.execute("SELECT COUNT(*) FROM lightning")
     count = cursor.fetchone()[0]
     print(f"Lightning strikes count: {count}")
     
