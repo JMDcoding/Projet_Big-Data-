@@ -16,6 +16,7 @@ from src.ingestion.api_client import BlitzortungAPI, OpenMeteoAPI, OpenSkyAPI
 from src.storage.data_lake import JSONDataLake, CSVDataLake, MinIODataLake
 from src.transformation.transformer import LightningDataTransformer
 from src.transformation.disruption_calculator import DisruptionCalculator
+from src.transformation.trajectory_predictor import TrajectoryPredictor
 
 # Try to import database modules
 try:
@@ -85,6 +86,9 @@ class DataPipeline:
         
         # Initialize disruption calculator
         self.disruption_calculator = DisruptionCalculator()
+        
+        # Initialize trajectory predictor (for flight path analysis)
+        self.trajectory_predictor = TrajectoryPredictor()
         
         # Store transformed data for disruption calculation
         self.last_lightning_df = None
@@ -555,6 +559,81 @@ class DataPipeline:
             self.logger.error(f"Flight storage failed: {str(e)}")
             return {"status": "failed", "error": str(e)}
     
+    def compute_trajectories(self, flights_data: pd.DataFrame, 
+                            lightning_data: pd.DataFrame) -> dict:
+        """Predict flight trajectories and identify danger zones.
+        
+        Args:
+            flights_data: DataFrame with flight information
+            lightning_data: DataFrame with lightning strike locations
+            
+        Returns:
+            Dictionary with trajectory prediction results
+        """
+        self.logger.info("")
+        self.logger.info("FLIGHT TRAJECTORY PREDICTION")
+        self.logger.info("-" * 70)
+        
+        try:
+            if flights_data.empty or lightning_data.empty:
+                self.logger.warning("Missing data for trajectory prediction")
+                return {
+                    "status": "success",
+                    "trajectories_predicted": 0,
+                    "critical_paths": 0,
+                    "message": "No flight or lightning data to analyze"
+                }
+            
+            # Predict trajectories
+            import pandas as pd
+            predictions = self.trajectory_predictor.predict_trajectories(
+                flights_data,
+                lightning_data,
+                prediction_minutes=60
+            )
+            
+            if predictions.empty:
+                self.logger.warning("No trajectory predictions generated")
+                return {
+                    "status": "success",
+                    "trajectories_predicted": 0,
+                    "critical_paths": 0
+                }
+            
+            # Identify critical paths
+            critical_paths = self.trajectory_predictor.identify_critical_paths(
+                predictions,
+                risk_threshold='HIGH'
+            )
+            
+            # Save predictions to MinIO if available
+            if self.use_minio and self.minio_lake:
+                try:
+                    timestamp = datetime.now().isoformat().replace(":", "-")
+                    trajectory_path = f"trajectories/{timestamp}/predictions.json"
+                    self.minio_lake.save(predictions.to_dict('records'), trajectory_path)
+                    self.logger.info(f"[OK] Trajectory predictions saved to MinIO: {trajectory_path}")
+                except Exception as e:
+                    self.logger.warning(f"Failed to save trajectories to MinIO: {str(e)}")
+            
+            self.logger.info(f"[OK] Predicted {len(predictions)} trajectory segments for {predictions['flight_number'].nunique()} flights")
+            
+            return {
+                "status": "success",
+                "trajectories_predicted": len(predictions),
+                "flights_analyzed": int(predictions['flight_number'].nunique()),
+                "critical_paths": len(critical_paths),
+                "critical_segments": critical_paths.to_dict('records') if not critical_paths.empty else []
+            }
+        
+        except Exception as e:
+            self.logger.error(f"Trajectory prediction failed: {str(e)}")
+            return {
+                "status": "failed",
+                "error": str(e),
+                "trajectories_predicted": 0
+            }
+    
     def compute_disruptions(self, lightning_records: list, flights_records: list) -> dict:
         """Calculate flight disruption risks based on lightning strikes.
         
@@ -566,7 +645,7 @@ class DataPipeline:
             Dictionary with disruption calculation results
         """
         self.logger.info("")
-        self.logger.info("DISRUPTION CALCULATION")
+        self.logger.info("DISRUPTION CALCULATION & TRAJECTORY ANALYSIS")
         self.logger.info("-" * 70)
         
         try:
@@ -603,11 +682,18 @@ class DataPipeline:
                 except Exception as e:
                     self.logger.warning(f"Failed to save disruptions to MinIO: {str(e)}")
             
+            # Predict flight trajectories for danger zone avoidance
+            trajectory_result = self.compute_trajectories(
+                self.last_flights_df,
+                self.last_lightning_df
+            )
+            
             return {
                 "status": "success",
                 "disruptions_calculated": len(disruptions),
                 "critical_flights": len([d for d in disruptions if d.get("risk_level") == "CRITICAL"]),
-                "high_risk_flights": len([d for d in disruptions if d.get("risk_level") == "HIGH"])
+                "high_risk_flights": len([d for d in disruptions if d.get("risk_level") == "HIGH"]),
+                "trajectories": trajectory_result
             }
         
         except Exception as e:
