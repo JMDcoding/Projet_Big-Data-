@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from config.config import get_config
 from src.utils.logger import setup_logging
-from src.ingestion.api_client import BlitzortungAPI, OpenMeteoAPI, OpenSkyAPI
+from src.ingestion.api_client import BlitzortungAPI, OpenMeteoAPI, AviationStackAPI
 from src.storage.data_lake import JSONDataLake, CSVDataLake, MinIODataLake
 from src.transformation.transformer import LightningDataTransformer
 from src.transformation.disruption_calculator import DisruptionCalculator
@@ -58,9 +58,9 @@ class DataPipeline:
             "open_meteo": OpenMeteoAPI()
         }
         
-        # Initialize flight data sources (API only - no synthetic data)
+        # Initialize flight data sources (API only - with full route/destination data)
         self.flight_sources = {
-            "opensky": OpenSkyAPI()
+            "aviationstack": AviationStackAPI()
         }
         
         # Initialize MinIO storage (object storage) - PRIMARY DATA LAKE
@@ -339,7 +339,7 @@ class DataPipeline:
     def run_ingestion_flights(self, source_priority: list = None) -> dict:
         """Run flight data ingestion from real APIs only.
         
-        Try sources in priority order: opensky (no synthetic/test data)
+        Try sources in priority order: aviationstack (with full destination/arrival data)
         
         Args:
             source_priority: List of source names to try (default: all)
@@ -348,7 +348,7 @@ class DataPipeline:
             Dictionary with ingestion results
         """
         if source_priority is None:
-            source_priority = ["opensky"]
+            source_priority = ["aviationstack"]
         
         self.logger.info("")
         self.logger.info("FLIGHT DATA INGESTION")

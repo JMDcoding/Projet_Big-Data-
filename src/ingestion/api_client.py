@@ -334,39 +334,50 @@ class FlightDataSource(DataSource):
         self.logger = logging.getLogger(self.__class__.__name__)
 
 
-class OpenSkyAPI(FlightDataSource):
-    """Client for OpenSky Network API (free, real-time flight data).
+
+class AviationStackAPI(FlightDataSource):
+    """Client for AviationStack API - real-time flight data with complete route information.
     
-    Provides real-time flight tracking data for aircraft in European airspace.
+    Provides detailed flight information including:
+    - Origin & destination airports (IATA codes & names)
+    - Departure and arrival times (scheduled vs actual)
+    - Aircraft type
+    - Airline information
+    - Flight status
+    
+    Free API: https://aviationstack.com (100 requests/month free tier)
     """
     
-    def __init__(self, min_latitude: float = 35, max_latitude: float = 55,
+    def __init__(self, min_latitude: float = 35, max_latitude: float = 55, 
                  min_longitude: float = -10, max_longitude: float = 30):
-        """Initialize OpenSky API client.
+        """Initialize AviationStack API client.
         
         Args:
-            min_latitude: Bounding box min latitude (Europe)
+            min_latitude: Bounding box min latitude (default: Europe)
             max_latitude: Bounding box max latitude
             min_longitude: Bounding box min longitude
             max_longitude: Bounding box max longitude
         """
-        super().__init__("OpenSkyAPI")
-        self.base_url = "https://opensky-network.org/api/states/all"
+        super().__init__("AviationStackAPI")
+        
+        # IMPORTANT: Set your AviationStack API key
+        # Get free API key at: https://aviationstack.com/
+        self.api_key = "free"  # Free tier key (100 requests/month)
+        self.base_url = "https://api.aviationstack.com/v1/flights"
         self.bbox = (min_latitude, max_latitude, min_longitude, max_longitude)
-        self.timeout = 10
+        self.timeout = 15
+        self.logger.info("AviationStackAPI initialized - provides full route/destination data")
     
     def fetch(self) -> Dict[str, Any]:
-        """Fetch flight data from OpenSky Network.
+        """Fetch flight data from AviationStack API.
         
         Returns:
-            Dictionary with flight data
+            Dictionary with flight data including destination info
         """
         try:
             params = {
-                "lamin": self.bbox[0],
-                "lamax": self.bbox[1],
-                "lomin": self.bbox[2],
-                "lomax": self.bbox[3]
+                "access_key": self.api_key,
+                "limit": 100
             }
             
             response = requests.get(self.base_url, params=params, timeout=self.timeout)
@@ -374,170 +385,99 @@ class OpenSkyAPI(FlightDataSource):
             
             data = response.json()
             
-            # Convert to standardized format
             flights = []
-            if "states" in data and data["states"]:
-                from datetime import timedelta
-                
-                for state in data["states"]:
-                    # state format: [ICAO24, callsign, origin_country, time_position, time_velocity,
-                    #               longitude, latitude, geo_altitude, on_ground, velocity,
-                    #               true_track, vertical_rate, sensors, baro_altitude, squawk, spi, source_type]
-                    if state[5] is not None and state[6] is not None:  # has lat/lon
-                        # Use the time_velocity timestamp (state[4]) for current position time
-                        # Estimate departure time based on current altitude (lower alt = more recent departure)
-                        current_time = datetime.fromtimestamp(state[4]) if state[4] else datetime.now()
-                        altitude = state[13] if state[13] else state[7]
-                        
-                        # Estimate flight duration based on altitude and velocity
-                        # Typical climb rate ~2000 ft/min, cruise ~450 knots
-                        # Rough estimation: if at cruise (>25000 ft), assume 2-4 hours into flight
-                        # if climbing (<15000 ft), assume <1 hour into flight
-                        if altitude and altitude > 25000:
-                            estimated_flight_duration = timedelta(hours=3)  # Typical European flight ~3 hours
-                            departure_time = current_time - estimated_flight_duration
-                        else:
-                            estimated_flight_duration = timedelta(hours=1)  # Short flight or climbing
-                            departure_time = current_time - timedelta(minutes=30)
-                        
-                        arrival_time = current_time + timedelta(hours=2)  # Estimate arrival in ~2 hours
-                        
-                        flight = {
-                            "flight_number": state[1].strip() if state[1] else f"UNKNOWN_{state[0]}",
-                            "departure": state[2],
-                            "arrival": "Unknown",
-                            "latitude": state[6],
-                            "longitude": state[5],
-                            "altitude": altitude,
-                            "velocity": state[9],
-                            "heading": state[10],
-                            "vertical_rate": state[11],
-                            "timestamp": current_time.isoformat(),
-                            "departure_time": departure_time.isoformat(),
-                            "arrival_time": arrival_time.isoformat(),
-                            "source": "opensky_api"
+            if "data" in data and isinstance(data["data"], list):
+                for flight in data["data"]:
+                    try:
+                        flight_dict = {
+                            "flight_number": self._get_flight_number(flight),
+                            "flight_iata": flight.get("flight", {}).get("iata", ""),
+                            "flight_icao": flight.get("flight", {}).get("icao", ""),
+                            
+                            # Departure information
+                            "departure_airport": flight.get("departure", {}).get("iata", ""),
+                            "departure_airport_name": flight.get("departure", {}).get("airport", ""),
+                            "departure_city": flight.get("departure", {}).get("city", ""),
+                            "departure_country": flight.get("departure", {}).get("country", ""),
+                            "departure_scheduled": flight.get("departure", {}).get("scheduled", ""),
+                            "departure_actual": flight.get("departure", {}).get("actual", ""),
+                            
+                            # Arrival information
+                            "arrival_airport": flight.get("arrival", {}).get("iata", ""),
+                            "arrival_airport_name": flight.get("arrival", {}).get("airport", ""),
+                            "arrival_city": flight.get("arrival", {}).get("city", ""),
+                            "arrival_country": flight.get("arrival", {}).get("country", ""),
+                            "arrival_scheduled": flight.get("arrival", {}).get("scheduled", ""),
+                            "arrival_actual": flight.get("arrival", {}).get("actual", ""),
+                            "arrival_estimated": flight.get("arrival", {}).get("estimated", ""),
+                            
+                            # Aircraft information
+                            "aircraft_iata": flight.get("aircraft", {}).get("iata", ""),
+                            "aircraft_icao": flight.get("aircraft", {}).get("icao", ""),
+                            "aircraft_name": flight.get("aircraft", {}).get("name", ""),
+                            
+                            # Airline information
+                            "airline_iata": flight.get("airline", {}).get("iata", ""),
+                            "airline_icao": flight.get("airline", {}).get("icao", ""),
+                            "airline_name": flight.get("airline", {}).get("name", ""),
+                            
+                            # Current position (if available)
+                            "latitude": flight.get("live", {}).get("latitude"),
+                            "longitude": flight.get("live", {}).get("longitude"),
+                            "altitude": flight.get("live", {}).get("altitude"),
+                            "direction": flight.get("live", {}).get("direction"),
+                            
+                            # Flight status
+                            "flight_status": flight.get("flight_status", ""),
+                            
+                            # Timestamps
+                            "timestamp": datetime.now().isoformat(),
+                            "source": "aviationstack_api"
                         }
-                        flights.append(flight)
+                        flights.append(flight_dict)
+                    except Exception as e:
+                        self.logger.warning(f"Error parsing flight data: {str(e)}")
+                        continue
             
-            self.logger.info(f"Fetched {len(flights)} flights from OpenSky")
+            self.logger.info(f"Fetched {len(flights)} flights from AviationStack - with destination data")
             
             return {
                 "flights": flights,
-                "source": "opensky_api",
+                "source": "aviationstack_api",
                 "timestamp": datetime.now().isoformat(),
                 "record_count": len(flights)
             }
         
+        except requests.exceptions.RequestException as e:
+            if "401" in str(e) or "403" in str(e):
+                self.logger.warning(
+                    "AviationStack API auth failed. "
+                    "Set AVIATIONSTACK_API_KEY environment variable or get key at aviationstack.com"
+                )
+            else:
+                self.logger.warning(f"AviationStack API request failed: {str(e)}")
+            return {"flights": [], "error": str(e)}
         except Exception as e:
-            self.logger.warning(f"OpenSky API error: {str(e)}")
+            self.logger.error(f"Unexpected error: {str(e)}")
             return {"flights": [], "error": str(e)}
     
-    def validate(self, data: Dict[str, Any]) -> bool:
-        """Validate flight data.
+    def _get_flight_number(self, flight: dict) -> str:
+        """Extract flight number from API response."""
+        flight_info = flight.get("flight", {})
+        iata = flight_info.get("iata", "")
+        icao = flight_info.get("icao", "")
         
-        Args:
-            data: Data to validate
-            
-        Returns:
-            True if data is valid
-        """
-        return isinstance(data, dict) and ("flights" in data or "error" in data)
-    
-    def close(self):
-        """No resources to close."""
-        pass
-
-
-class SyntheticFlightData(FlightDataSource):
-    """Generate synthetic flight data for demonstration.
-    
-    Useful when real APIs are unavailable.
-    """
-    
-    def __init__(self):
-        """Initialize synthetic flight data generator."""
-        super().__init__("SyntheticFlightData")
-    
-    def fetch(self) -> Dict[str, Any]:
-        """Generate synthetic flight data.
-        
-        Returns:
-            Dictionary with flight data
-        """
-        try:
-            flights = self._generate_synthetic_flights(30)
-            
-            self.logger.info(f"Generated {len(flights)} synthetic flights")
-            
-            return {
-                "flights": flights,
-                "source": "synthetic_demo",
-                "timestamp": datetime.now().isoformat(),
-                "record_count": len(flights)
-            }
-        
-        except Exception as e:
-            self.logger.error(f"Error generating synthetic flights: {str(e)}")
-            return {"flights": [], "error": str(e)}
-    
-    def _generate_synthetic_flights(self, count: int = 30) -> list:
-        """Generate synthetic flight data.
-        
-        Args:
-            count: Number of flights to generate
-            
-        Returns:
-            List of synthetic flight dictionaries
-        """
-        import numpy as np
-        from datetime import timedelta
-        
-        airlines = ["AF", "LH", "BA", "KL", "SQ", "UA", "DL", "AA", "TK"]
-        airports = ["ORY", "CDG", "LHR", "AMS", "FRA", "FCO", "MAD", "BCN", "VIE"]
-        
-        flights = []
-        base_time = datetime.now() - timedelta(hours=2)
-        
-        for i in range(count):
-            # Generate random departure time
-            flight_time = base_time + timedelta(
-                minutes=np.random.randint(0, 120),
-                seconds=np.random.randint(0, 60)
-            )
-            
-            # Estimate departure time based on flight duration
-            flight_duration = timedelta(hours=np.random.uniform(1.5, 4))  # 1.5-4 hours typical
-            departure_time = flight_time - flight_duration / 2  # Assume we're halfway through flight
-            arrival_time = flight_time + flight_duration / 2
-            
-            flight = {
-                "flight_number": f"{np.random.choice(airlines)}{np.random.randint(100, 9999):04d}",
-                "departure": np.random.choice(airports),
-                "arrival": np.random.choice(airports),
-                "latitude": round(np.random.uniform(35, 55), 4),
-                "longitude": round(np.random.uniform(-10, 30), 4),
-                "altitude": round(np.random.uniform(5000, 12000), 1),
-                "velocity": round(np.random.uniform(400, 900), 1),
-                "heading": round(np.random.uniform(0, 360), 1),
-                "vertical_rate": round(np.random.uniform(-5, 5), 2),
-                "timestamp": flight_time.isoformat(),
-                "departure_time": departure_time.isoformat(),
-                "arrival_time": arrival_time.isoformat(),
-                "source": "synthetic_demo"
-            }
-            flights.append(flight)
-        
-        return flights
+        if iata:
+            return iata
+        elif icao:
+            return icao
+        else:
+            airline_code = flight.get("airline", {}).get("iata", "XX")
+            flight_num = flight.get("flight", {}).get("number", "0000")
+            return f"{airline_code}{flight_num}"
     
     def validate(self, data: Dict[str, Any]) -> bool:
-        """Validate synthetic flight data.
-        
-        Args:
-            data: Data to validate
-            
-        Returns:
-            True if data is valid
-        """
+        """Validate flight data."""
         return isinstance(data, dict) and ("flights" in data or "error" in data)
     
     def close(self):
