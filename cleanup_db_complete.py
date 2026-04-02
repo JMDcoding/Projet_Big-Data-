@@ -26,8 +26,8 @@ def cleanup_all_data(host, port, database, user, password):
         print("PostgreSQL COMPLETE DATA CLEANUP")
         print("="*70)
         print("\n⚠️  ATTENTION: Cette opération SUPPRIMERA TOUTES les données!")
-        print("   → Lightning strikes (lightning_strikes)")
-        print("   → Flight disruptions (flight_disruptions)")
+        print("   → Lightning strikes")
+        print("   → Flight disruptions")
         print("\nConfirmation requise...\n")
         
         # Confirmation

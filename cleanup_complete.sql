@@ -6,14 +6,14 @@
 -- ============================================================================
 
 -- Supprimer tous les éclairs
-DELETE FROM lightning_strikes;
+DELETE FROM lightning;
 -- Supprimer toutes les perturbations de vol
 DELETE FROM flight_disruptions;
 
 -- ============================================================================
 -- VÉRIFICATION: Afficher le nombre d'enregistrements restants
 -- ============================================================================
-SELECT 'lightning_strikes' as table_name, COUNT(*) as remaining_records FROM lightning_strikes
+SELECT 'lightning' as table_name, COUNT(*) as remaining_records FROM lightning
 UNION ALL
 SELECT 'flight_disruptions', COUNT(*) FROM flight_disruptions;
 

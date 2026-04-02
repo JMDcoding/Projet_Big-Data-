@@ -32,7 +32,7 @@ def cleanup_database(host, port, database, user, password):
         cursor = conn.cursor()
         
         tables = {
-            'lightning_strikes': 'Lightning strike data',
+            'lightning': 'Lightning strike data',
             'flight_disruptions': 'Flight disruption data'
         }
         
