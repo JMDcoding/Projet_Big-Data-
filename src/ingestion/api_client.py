@@ -484,3 +484,117 @@ class AviationStackAPI(FlightDataSource):
         """No resources to close."""
         pass
 
+
+class StormForecastAPI(LightningDataSource):
+    """Storm forecast API using Open-Meteo (FREE, no API key needed).
+    
+    Predicts thunderstorms and severe weather for risk zone identification.
+    Uses WMO weather codes: 80+ = storms, 95-99 = severe thunderstorms
+    """
+    
+    def __init__(self, latitude: float = 45.764, longitude: float = 4.8357, name: str = "StormForecast"):
+        """Initialize storm forecast source.
+        
+        Args:
+            latitude: Location latitude (default: Lyon)
+            longitude: Location longitude (default: Lyon)
+            name: Source name
+        """
+        super().__init__(name)
+        self.latitude = latitude
+        self.longitude = longitude
+        self.base_url = "https://api.open-meteo.com/v1/forecast"
+    
+    def fetch(self) -> Dict[str, Any]:
+        """Fetch 7-day storm forecasts (alias for extract)."""
+        return self.extract()
+    
+    def extract(self) -> Dict[str, Any]:
+        """Fetch storm forecasts from Open-Meteo API.
+        
+        Returns:
+            Dictionary with storm forecasts and risk assessment
+        """
+        try:
+            self.logger.info(f"Fetching storm forecasts for ({self.latitude}, {self.longitude})")
+            
+            params = {
+                "latitude": self.latitude,
+                "longitude": self.longitude,
+                "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum",
+                "timezone": "Europe/Paris",
+                "forecast_days": 7
+            }
+            
+            response = requests.get(self.base_url, params=params, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            # Extract storm data
+            daily = data.get("daily", {})
+            dates = daily.get("time", [])
+            codes = daily.get("weather_code", [])
+            temps = daily.get("temperature_2m_max", [])
+            precips = daily.get("precipitation_sum", [])
+            
+            # Analyze risk
+            forecasts = []
+            for date, code, temp, precip in zip(dates, codes, temps, precips):
+                risk = self._assess_risk(code)
+                forecasts.append({
+                    "date": date,
+                    "weather_code": code,
+                    "temperature_max": temp,
+                    "precipitation": precip,
+                    "storm_risk": risk,
+                    "is_severe": risk in ["SEVERE", "HIGH"]
+                })
+            
+            severe_count = sum(1 for f in forecasts if f["is_severe"])
+            
+            return {
+                "status": "success",
+                "location": f"({self.latitude}, {self.longitude})",
+                "forecasts": forecasts,
+                "severe_storms": severe_count,
+                "next_storm_date": next((f["date"] for f in forecasts if f["is_severe"]), None),
+                "timestamp": datetime.now().isoformat(),
+                "source": "open_meteo"
+            }
+        
+        except Exception as e:
+            self.logger.error(f"Error fetching storm forecast: {str(e)}")
+            return {
+                "status": "failed",
+                "error": str(e),
+                "source": "open_meteo"
+            }
+    
+    def _assess_risk(self, weather_code: int) -> str:
+        """Assess storm risk from WMO weather code.
+        
+        Args:
+            weather_code: WMO code (0-99)
+            
+        Returns:
+            Risk level: NONE, LOW, MEDIUM, HIGH, SEVERE
+        """
+        if weather_code in [95, 96, 99]:
+            return "SEVERE"  # Thunderstorms with hail/heavy
+        elif weather_code in [80, 81, 82]:
+            return "HIGH"    # Showers (possibly thunderstorms)
+        elif weather_code in [85, 86]:
+            return "MEDIUM"  # Freezing rain/snow
+        elif weather_code in [50, 51, 53, 55, 56, 57, 58, 61, 63, 65, 66, 67, 68, 71, 73, 75]:
+            return "LOW"     # Light/moderate rain or snow
+        else:
+            return "NONE"    # Clear/cloudy
+    
+    def validate(self, data: Dict[str, Any]) -> bool:
+        """Validate storm forecast data."""
+        return isinstance(data, dict) and ("forecasts" in data or "error" in data)
+    
+    def close(self):
+        """No resources to close."""
+        pass
