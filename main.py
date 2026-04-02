@@ -1,6 +1,6 @@
 """
 Main pipeline orchestrator for lightning data processing.
-Uses local demo data by default, with fallback to APIs.
+Uses real APIs only (no demo/test data).
 """
 import logging
 import sys
@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from config.config import get_config
 from src.utils.logger import setup_logging
-from src.ingestion.api_client import LocalDemoData, BlitzortungAPI, OpenMeteoAPI, OpenSkyAPI, SyntheticFlightData
+from src.ingestion.api_client import BlitzortungAPI, OpenMeteoAPI, OpenSkyAPI
 from src.storage.data_lake import JSONDataLake, CSVDataLake, MinIODataLake
 from src.transformation.transformer import LightningDataTransformer
 from src.transformation.disruption_calculator import DisruptionCalculator
@@ -50,17 +50,15 @@ class DataPipeline:
         self.logger.info("LIGHTNING DATA PIPELINE INITIALIZED")
         self.logger.info("=" * 70)
         
-        # Initialize data sources (in priority order)
+        # Initialize data sources (APIs only - no demo/test data)
         self.data_sources = {
-            "local_demo": LocalDemoData(data_dir=self.config.DATA_RAW_PATH),
             "blitzortung": BlitzortungAPI(),
             "open_meteo": OpenMeteoAPI()
         }
         
-        # Initialize flight data sources (in priority order)
+        # Initialize flight data sources (API only - no synthetic data)
         self.flight_sources = {
-            "opensky": OpenSkyAPI(),
-            "synthetic": SyntheticFlightData()
+            "opensky": OpenSkyAPI()
         }
         
         # Initialize storage (JSON/CSV in local file system)
@@ -130,9 +128,9 @@ class DataPipeline:
             return False
     
     def run_ingestion(self, source_priority: list = None) -> dict:
-        """Run data ingestion from available sources.
+        """Run data ingestion from available APIs.
         
-        Try sources in priority order: local_demo -> blitzortung -> open_meteo
+        Try sources in priority order: blitzortung -> open_meteo (no demo/test data)
         
         Args:
             source_priority: List of source names to try (default: all)
@@ -141,7 +139,7 @@ class DataPipeline:
             Dictionary with ingestion results
         """
         if source_priority is None:
-            source_priority = ["local_demo", "blitzortung", "open_meteo"]
+            source_priority = ["blitzortung", "open_meteo"]
         
         self.logger.info("")
         self.logger.info("PHASE 1: DATA INGESTION")
@@ -344,9 +342,9 @@ class DataPipeline:
             return {"status": "failed", "error": str(e)}
     
     def run_ingestion_flights(self, source_priority: list = None) -> dict:
-        """Run flight data ingestion from available sources.
+        """Run flight data ingestion from real APIs only.
         
-        Try sources in priority order: opensky -> synthetic
+        Try sources in priority order: opensky (no synthetic/test data)
         
         Args:
             source_priority: List of source names to try (default: all)
@@ -355,7 +353,7 @@ class DataPipeline:
             Dictionary with ingestion results
         """
         if source_priority is None:
-            source_priority = ["opensky", "synthetic"]
+            source_priority = ["opensky"]
         
         self.logger.info("")
         self.logger.info("FLIGHT DATA INGESTION")
