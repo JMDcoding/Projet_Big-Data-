@@ -14,6 +14,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from config.config import get_config
 from src.utils.logger import setup_logging
 from src.ingestion.api_client import BlitzortungAPI, OpenMeteoAPI, AviationStackAPI
+from src.ingestion.blitzortung_websocket import BlitzortungWebSocketDataSource
+from src.ingestion.alternative_apis import OpenSkyAlternative
 from src.storage.data_lake import JSONDataLake, CSVDataLake, MinIODataLake
 from src.transformation.transformer import LightningDataTransformer
 from src.transformation.disruption_calculator import DisruptionCalculator
@@ -58,9 +60,12 @@ class DataPipeline:
             "open_meteo": OpenMeteoAPI()
         }
         
-        # Initialize flight data sources (API only - with full route/destination data)
+        # WebSocket option for Blitzortung (real-time, preferred over HTTP API)
+        self.websocket_source = None
+        
+        # Initialize flight data sources (OpenSky Network - unlimited, no quota)
         self.flight_sources = {
-            "aviationstack": AviationStackAPI()
+            "opensky": OpenSkyAlternative(lat=48.8527, lon=2.3510, radius_km=100)
         }
         
         # Initialize MinIO storage (object storage) - PRIMARY DATA LAKE
@@ -131,7 +136,9 @@ class DataPipeline:
     def run_ingestion(self, source_priority: list = None) -> dict:
         """Run data ingestion from available APIs.
         
-        Try sources in priority order: blitzortung -> open_meteo (no demo/test data)
+        Try sources in priority order: 
+        1. WebSocket Blitzortung (real-time)
+        2. HTTP APIs: blitzortung -> open_meteo
         
         Args:
             source_priority: List of source names to try (default: all)
@@ -139,9 +146,6 @@ class DataPipeline:
         Returns:
             Dictionary with ingestion results
         """
-        if source_priority is None:
-            source_priority = ["blitzortung", "open_meteo"]
-        
         self.logger.info("")
         self.logger.info("PHASE 1: DATA INGESTION")
         self.logger.info("-" * 70)
@@ -149,7 +153,36 @@ class DataPipeline:
         raw_data = None
         source_used = None
         
-        # Try each source in priority order
+        # Try WebSocket Blitzortung first (preferred, real-time)
+        try:
+            self.logger.info("Trying WebSocket Blitzortung (real-time)...")
+            websocket_source = BlitzortungWebSocketDataSource()
+            websocket_source.start()
+            
+            import time
+            time.sleep(3)  # Wait for strikes to come in
+            
+            result = websocket_source.fetch()
+            
+            if result and "strikes" in result and result["strikes"]:
+                self.logger.info(f"[OK] WebSocket Blitzortung: {len(result['strikes'])} lightning strikes (real-time)")
+                raw_data = result
+                source_used = "blitzortung_websocket"
+                self.websocket_source = websocket_source  # Keep connection alive
+                return {
+                    "status": "success",
+                    "source": source_used,
+                    "records": len(raw_data.get("strikes", [])),
+                    "raw_data": raw_data
+                }
+        except Exception as e:
+            self.logger.warning(f"WebSocket Blitzortung failed: {str(e)} - Falling back to HTTP APIs")
+        
+        # Fallback to HTTP APIs
+        if source_priority is None:
+            source_priority = ["blitzortung", "open_meteo"]
+        
+        # Try each HTTP source in priority order
         for source_name in source_priority:
             if source_name not in self.data_sources:
                 continue
@@ -339,7 +372,7 @@ class DataPipeline:
     def run_ingestion_flights(self, source_priority: list = None) -> dict:
         """Run flight data ingestion from real APIs only.
         
-        Try sources in priority order: aviationstack (with full destination/arrival data)
+        Try sources in priority order: opensky (unlimited, no quota)
         
         Args:
             source_priority: List of source names to try (default: all)
@@ -348,7 +381,7 @@ class DataPipeline:
             Dictionary with ingestion results
         """
         if source_priority is None:
-            source_priority = ["aviationstack"]
+            source_priority = ["opensky"]
         
         self.logger.info("")
         self.logger.info("FLIGHT DATA INGESTION")
