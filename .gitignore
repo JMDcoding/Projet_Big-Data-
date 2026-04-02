@@ -1,16 +1,32 @@
-# Virtual Environment
-venv/
-env/
-ENV/
-
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
 
 # IDE
 .vscode/
@@ -18,29 +34,82 @@ pip-delete-this-directory.txt
 *.swp
 *.swo
 *~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
 
 # Logs
 logs/
 *.log
+app.log
 
-# Data
-data/raw/*
-data/processed/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
+# DATA STORAGE CONFIGURATION
+# =========================
+# ALL DATA MUST BE STORED IN:
+# 1. MinIO Object Storage (primary data lake)
+# 2. PostgreSQL Database (indexed records)
+# 3. DO NOT commit local data files
+# =========================
 
-# Environment variables
-.env
-.env.local
+# Raw data files (CSV, JSON, Parquet, etc)
+data/raw/*.json
+data/raw/*.csv
+data/raw/*.parquet
+data/raw/*.avro
+data/raw/*.xlsx
+data/raw/*.xls
 
-# Database
+# Processed data files
+data/processed/*.json
+data/processed/*.csv
+data/processed/*.parquet
+data/processed/*.avro
+
+# MinIO data directory (local backend storage)
+data/minio/
+minio_data/
+minio/
+
+# Temporary and cache files
+*.tmp
+*.temp
+*.cache
+temp/
+cache/
+*.bak
+*.swp
+
+# Database files
 *.db
 *.sqlite
+*.sqlite3
+*.sqlite-journal
 
-# OS
-.DS_Store
+# Environment configuration
+.env
+.env.local
+.env.*.local
+config/.env.local
+
+# OS files
 Thumbs.db
+.DS_Store
 
-# Cache
-.pytest_cache/
-.mypy_cache/
+# Project specific
+notebooks/output/
+notebooks/data/
+/docs/_build/
+
+# Keep directory structure with .gitkeep
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!logs/.gitkeep
+!src/database/.gitkeep

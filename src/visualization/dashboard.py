@@ -37,6 +37,77 @@ class LightningDashboard:
         except Exception as e:
             self.logger.error(f"Error configuring page: {str(e)}")
     
+    def apply_lightning_filters(self, lightning_data: pd.DataFrame, filters: Dict) -> pd.DataFrame:
+        """Apply filters to lightning data.
+        
+        Args:
+            lightning_data: Original lightning data
+            filters: Dictionary of filters to apply
+            
+        Returns:
+            Filtered lightning data
+        """
+        if lightning_data.empty:
+            return lightning_data
+        
+        df = lightning_data.copy()
+        
+        # Convert timestamp if not already datetime
+        if "timestamp" in df.columns:
+            df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+        
+        # Apply date range filter
+        if "date_range" in filters and filters["date_range"]:
+            date_range = filters["date_range"]
+            if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
+                start_date = pd.Timestamp(date_range[0]).replace(hour=0, minute=0, second=0)
+                end_date = pd.Timestamp(date_range[1]).replace(hour=23, minute=59, second=59)
+                df = df[(df["timestamp"] >= start_date) & (df["timestamp"] <= end_date)]
+        
+        # Apply minimum intensity filter
+        if "min_intensity" in filters and "intensity" in df.columns:
+            min_intensity = filters["min_intensity"]
+            df = df[df["intensity"] >= min_intensity]
+        
+        return df
+    
+    def apply_flights_filters(self, flights_data: pd.DataFrame, filters: Dict) -> pd.DataFrame:
+        """Apply filters to flights data.
+        
+        Args:
+            flights_data: Original flights data
+            filters: Dictionary of filters to apply
+            
+        Returns:
+            Filtered flights data
+        """
+        if flights_data.empty:
+            return flights_data
+        
+        df = flights_data.copy()
+        
+        # Convert timestamps if not already datetime
+        for col in ["departure_time", "arrival_time", "timestamp"]:
+            if col in df.columns:
+                df[col] = pd.to_datetime(df[col], errors="coerce")
+        
+        # Apply date range filter (use earliest timestamp column)
+        if "date_range" in filters and filters["date_range"]:
+            date_range = filters["date_range"]
+            if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
+                start_date = pd.Timestamp(date_range[0]).replace(hour=0, minute=0, second=0)
+                end_date = pd.Timestamp(date_range[1]).replace(hour=23, minute=59, second=59)
+                
+                # Filter by any available timestamp
+                time_cols = [col for col in ["timestamp", "departure_time", "arrival_time"] if col in df.columns]
+                if time_cols:
+                    mask = pd.Series([False] * len(df), index=df.index)
+                    for col in time_cols:
+                        mask |= (df[col] >= start_date) & (df[col] <= end_date)
+                    df = df[mask]
+        
+        return df
+    
     def render_header(self):
         """Render dashboard header."""
         st.markdown("# ⚡ Lightning & Flight Disruption Monitor")
@@ -50,27 +121,28 @@ class LightningDashboard:
             Dictionary of selected filters
         """
         with st.sidebar:
-            st.header("🔧 Filters")
+            st.header("🔧 Filters & Settings")
+            
+            today = pd.Timestamp.now().date()
+            start_date = (pd.Timestamp.now() - pd.Timedelta(days=7)).date()
             
             filters = {
                 "date_range": st.date_input(
                     "Select Date Range",
-                    value=(pd.Timestamp.now() - pd.Timedelta(days=7), pd.Timestamp.now())
-                ),
-                "region": st.selectbox(
-                    "Select Region",
-                    ["All", "Europe", "North America", "Asia", "Other"]
-                ),
-                "risk_level": st.multiselect(
-                    "Risk Level",
-                    ["Low", "Medium", "High", "Critical"],
-                    default=["Medium", "High", "Critical"]
+                    value=(start_date, today)
                 ),
                 "min_intensity": st.slider(
                     "Minimum Lightning Intensity",
                     min_value=0.0,
                     max_value=100.0,
-                    value=10.0
+                    value=0.0,
+                    step=5.0
+                ),
+                "time_scale": st.selectbox(
+                    "Lightning Timeline Scale",
+                    ["Hourly", "Daily"],
+                    index=1,
+                    help="Choose the time aggregation for the timeline graph"
                 ),
             }
             
@@ -92,12 +164,48 @@ class LightningDashboard:
             st.metric("✈️ Total Flights", len(flights_data))
         
         with col3:
-            disruption_count = len(flights_data[flights_data.get("disruption_probability", 0) > 0.5])
+            disruption_count = 0
+            if not flights_data.empty and "disruption_probability" in flights_data.columns:
+                disruption_count = len(flights_data[flights_data["disruption_probability"] > 0.5])
             st.metric("🚨 At-Risk Flights", disruption_count)
         
         with col4:
-            avg_intensity = lightning_data["intensity"].mean() if "intensity" in lightning_data else 0
+            avg_intensity = 0
+            if not lightning_data.empty and "intensity" in lightning_data.columns:
+                avg_intensity = lightning_data["intensity"].mean()
             st.metric("⚡ Avg Strike Intensity", f"{avg_intensity:.2f}")
+        
+        # Show last data received info
+        st.divider()
+        col_info1, col_info2 = st.columns(2)
+        
+        with col_info1:
+            if not lightning_data.empty and "timestamp" in lightning_data.columns:
+                last_lightning = pd.to_datetime(lightning_data["timestamp"]).max()
+                st.info(f"⚡ **Latest Lightning**: {last_lightning.strftime('%Y-%m-%d %H:%M:%S')}")
+            else:
+                st.info("⚡ **Latest Lightning**: No data")
+        
+        with col_info2:
+            if not flights_data.empty:
+                # Try multiple timestamp columns
+                last_timestamp = None
+                for col in ["timestamp", "departure_time", "arrival_time"]:
+                    if col in flights_data.columns:
+                        try:
+                            ts = pd.to_datetime(flights_data[col]).max()
+                            if pd.notna(ts):
+                                last_timestamp = ts
+                                break
+                        except:
+                            pass
+                
+                if last_timestamp:
+                    st.info(f"✈️ **Latest Flight**: {last_timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+                else:
+                    st.info("✈️ **Latest Flight**: No data")
+            else:
+                st.info("✈️ **Latest Flight**: No data")
     
     def render_lightning_map(self, lightning_data: pd.DataFrame):
         """Render lightning strikes on a map.
@@ -106,7 +214,7 @@ class LightningDashboard:
             lightning_data: Lightning strikes data with latitude and longitude
         """
         try:
-            if lightning_data.empty or "latitude" not in lightning_data or "longitude" not in lightning_data:
+            if lightning_data.empty or "latitude" not in lightning_data.columns or "longitude" not in lightning_data.columns:
                 st.warning("No lightning data available")
                 return
             
@@ -129,33 +237,73 @@ class LightningDashboard:
             self.logger.error(f"Error rendering map: {str(e)}")
             st.error(f"Error rendering map: {str(e)}")
     
-    def render_timeline(self, lightning_data: pd.DataFrame):
-        """Render lightning strikes timeline.
+    def render_timeline(self, lightning_data: pd.DataFrame, time_scale: str = "Daily"):
+        """Render lightning strikes timeline with configurable time scale.
         
         Args:
             lightning_data: Lightning strikes data with timestamps
+            time_scale: Time aggregation level ("Hourly", "Daily", "Weekly")
         """
         try:
-            if lightning_data.empty or "timestamp" not in lightning_data:
+            if lightning_data.empty or "timestamp" not in lightning_data.columns:
                 st.warning("No timeline data available")
                 return
             
-            # Group by hour
+            # Prepare data
             df_timeline = lightning_data.copy()
             df_timeline["timestamp"] = pd.to_datetime(df_timeline["timestamp"])
-            df_timeline["hour"] = df_timeline["timestamp"].dt.floor("H")
             
-            timeline_data = df_timeline.groupby("hour").size().reset_index(name="count")
+            # Group by selected time scale
+            if time_scale == "Hourly":
+                df_timeline["period"] = df_timeline["timestamp"].dt.floor("h")
+                period_label = "Hour"
+                date_format = "%Y-%m-%d %H:%M"
+            elif time_scale == "Daily":
+                df_timeline["period"] = df_timeline["timestamp"].dt.floor("D")
+                period_label = "Date"
+                date_format = "%Y-%m-%d"
+            else:  # Weekly
+                df_timeline["period"] = df_timeline["timestamp"].dt.floor("W")
+                period_label = "Week"
+                date_format = "%Y-W%U"
             
+            timeline_data = df_timeline.groupby("period").size().reset_index(name="count")
+            
+            # Create figure with better styling
             fig = px.line(
                 timeline_data,
-                x="hour",
+                x="period",
                 y="count",
-                title="Lightning Strikes Over Time",
-                labels={"hour": "Time", "count": "Number of Strikes"}
+                title=f"Lightning Strikes Over Time ({time_scale})",
+                labels={"period": period_label, "count": "Number of Strikes"},
+                markers=True,
+                line_shape="linear"
+            )
+            
+            # Enhance layout
+            fig.update_layout(
+                xaxis_title=period_label,
+                yaxis_title="Number of Strikes",
+                hovermode="x unified",
+                font=dict(size=12),
+                height=400
+            )
+            
+            fig.update_traces(
+                marker=dict(size=8, color="#FF6B35"),
+                line=dict(color="#FF6B35", width=2)
             )
             
             st.plotly_chart(fig, use_container_width=True)
+            
+            # Show summary stats
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Peak Activity", f"{timeline_data['count'].max()} strikes")
+            with col2:
+                st.metric("Average per Period", f"{timeline_data['count'].mean():.1f}")
+            with col3:
+                st.metric("Total Period Coverage", f"{len(timeline_data)} periods")
         
         except Exception as e:
             self.logger.error(f"Error rendering timeline: {str(e)}")
@@ -221,9 +369,12 @@ class LightningDashboard:
         """
         try:
             # Set default empty DataFrames
-            lightning_data = lightning_data or pd.DataFrame()
-            flights_data = flights_data or pd.DataFrame()
-            disruptions_data = disruptions_data or pd.DataFrame()
+            if lightning_data is None:
+                lightning_data = pd.DataFrame()
+            if flights_data is None:
+                flights_data = pd.DataFrame()
+            if disruptions_data is None:
+                disruptions_data = pd.DataFrame()
             
             # Render header
             self.render_header()
@@ -231,18 +382,24 @@ class LightningDashboard:
             # Render sidebar filters
             filters = self.render_sidebar()
             
-            # Render metrics
-            self.render_metrics(lightning_data, flights_data)
+            # Apply filters to data
+            filtered_lightning = self.apply_lightning_filters(lightning_data, filters)
+            filtered_flights = self.apply_flights_filters(flights_data, filters)
+            
+            # Render metrics (show both original and filtered counts)
+            st.markdown("### 📊 Dashboard Metrics")
+            st.markdown(f"*Showing filtered data (Lightning: {len(filtered_lightning)}/{len(lightning_data)}, Flights: {len(filtered_flights)}/{len(flights_data)})*")
+            self.render_metrics(filtered_lightning, filtered_flights)
             
             # Create tabs
             tab1, tab2, tab3 = st.tabs(["📍 Lightning Map", "✈️ Flights", "🚨 Disruptions"])
             
             with tab1:
-                self.render_lightning_map(lightning_data)
-                self.render_timeline(lightning_data)
+                self.render_lightning_map(filtered_lightning)
+                self.render_timeline(filtered_lightning, time_scale=filters.get("time_scale", "Daily"))
             
             with tab2:
-                self.render_flight_table(flights_data)
+                self.render_flight_table(filtered_flights)
             
             with tab3:
                 self.render_disruption_analysis(disruptions_data)
