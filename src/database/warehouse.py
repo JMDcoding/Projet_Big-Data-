@@ -302,22 +302,24 @@ class DataWarehouse:
             data: List of lightning records
         """
         query = """
-        INSERT INTO lightning_strikes 
-        (lightning_id, latitude, longitude, altitude, intensity, timestamp, source)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO lightning 
+        (lightning_id, latitude, longitude, altitude, intensity, timestamp, source, processed_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
         try:
             cursor = self.db.connection.cursor()
             
             for record in data:
+                # Map transformer columns to database columns
                 cursor.execute(query, (
-                    record.get("lightning_id"),
+                    record.get("id"),  # transformer 'id' -> db 'lightning_id'
                     record.get("latitude"),
                     record.get("longitude"),
                     record.get("altitude"),
-                    record.get("intensity"),
+                    record.get("signal"),  # transformer 'signal' -> db 'intensity'
                     record.get("timestamp"),
-                    record.get("source", "api")
+                    record.get("source", "api"),
+                    record.get("processed_at")
                 ))
             
             self.db.connection.commit()
