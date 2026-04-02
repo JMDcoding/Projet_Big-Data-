@@ -61,29 +61,29 @@ class DataRefreshService:
             self.db_connection = self.pipeline.db_connection
             self.warehouse = self.pipeline.warehouse
             
-            # Schedule lightning data refresh (every 20 minutes, with priority)
+            # Schedule lightning data refresh (every 5 minutes)
             self.scheduler.add_job(
                 self._refresh_lightning_data,
-                IntervalTrigger(minutes=20),
+                IntervalTrigger(minutes=5),
                 id="refresh_lightning",
                 name="Refresh Lightning Data",
                 coalesce=True,
                 max_instances=1,
                 replace_existing=True
             )
-            self.logger.info("Scheduled lightning refresh: every 20 minutes")
+            self.logger.info("Scheduled lightning refresh: every 5 minutes")
             
-            # Schedule flights data refresh (every 2 hours)
+            # Schedule flights data refresh (every 5 minutes)
             self.scheduler.add_job(
                 self._refresh_flights_data,
-                IntervalTrigger(hours=2),
+                IntervalTrigger(minutes=5),
                 id="refresh_flights",
                 name="Refresh Flights Data",
                 coalesce=True,
                 max_instances=1,
                 replace_existing=True
             )
-            self.logger.info("Scheduled flights refresh: every 2 hours")
+            self.logger.info("Scheduled flights refresh: every 5 minutes")
             
             # Start scheduler
             self.scheduler.start()
