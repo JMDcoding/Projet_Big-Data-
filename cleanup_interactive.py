@@ -32,10 +32,8 @@ def cleanup_database(host, port, database, user, password):
         cursor = conn.cursor()
         
         tables = {
-            'trajectories': 'Flight trajectory predictions',
-            'disruptions': 'Airspace disruption data',
-            'flights': 'Aircraft position data',
-            'lightning': 'Lightning strike data'
+            'lightning_strikes': 'Lightning strike data',
+            'flight_disruptions': 'Flight disruption data'
         }
         
         print("\n🗑️  Suppression des données de démo...")

@@ -31,7 +31,7 @@ def auto_cleanup():
         
         cursor = conn.cursor()
         
-        tables = ['trajectories', 'disruptions', 'flights', 'lightning']
+        tables = ['lightning_strikes', 'flight_disruptions']
         total_deleted = 0
         
         print("Suppression en cours...")
