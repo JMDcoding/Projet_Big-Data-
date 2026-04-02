@@ -63,11 +63,7 @@ class DataPipeline:
             "opensky": OpenSkyAPI()
         }
         
-        # Initialize storage (JSON/CSV in local file system)
-        self.json_lake = JSONDataLake(self.config.DATA_RAW_PATH)
-        self.csv_lake = CSVDataLake(self.config.DATA_RAW_PATH)
-        
-        # Initialize MinIO storage (object storage)
+        # Initialize MinIO storage (object storage) - PRIMARY DATA LAKE
         try:
             self.minio_lake = MinIODataLake(
                 minio_host="localhost:9000",
@@ -189,14 +185,8 @@ class DataPipeline:
         
         self.logger.info(f"Using data from: {source_used}")
         
-        # Save raw data
-        try:
-            timestamp = datetime.now().isoformat().replace(":", "-")
-            filename = f"lightning_raw_{timestamp}"
-            self.json_lake.save(raw_data, filename)
-            self.logger.info(f"Raw data saved to: {filename}.json")
-        except Exception as e:
-            self.logger.warning(f"Failed to save raw data: {str(e)}")
+        # NOTE: Data is NOT stored locally (data/raw folder does not exist)
+        # All data flows: API -> Transformation -> MinIO + PostgreSQL
         
         return {
             "status": "success",
@@ -403,14 +393,8 @@ class DataPipeline:
         
         self.logger.info(f"Using flight data from: {source_used}")
         
-        # Save raw data
-        try:
-            timestamp = datetime.now().isoformat().replace(":", "-")
-            filename = f"flights_raw_{timestamp}"
-            self.json_lake.save(flight_data, filename)
-            self.logger.info(f"Raw flight data saved to: {filename}.json")
-        except Exception as e:
-            self.logger.warning(f"Failed to save raw flight data: {str(e)}")
+        # NOTE: Data is NOT stored locally (data/raw folder does not exist)
+        # All data flows: API -> Transformation -> MinIO + PostgreSQL
         
         return {
             "status": "success",
