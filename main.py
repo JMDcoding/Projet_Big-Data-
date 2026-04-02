@@ -14,8 +14,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from config.config import get_config
 from src.utils.logger import setup_logging
-from src.ingestion.api_client import BlitzortungAPI, OpenMeteoAPI, AviationStackAPI
+from src.ingestion.api_client import BlitzortungAPI, OpenMeteoAPI, AviationStackAPI, StormForecastAPI
 from src.ingestion.alternative_apis import OpenSkyAlternative
+from src.visualization.risk_zones import StormRiskZoneManager
 from src.storage.data_lake import JSONDataLake, CSVDataLake, MinIODataLake
 from src.transformation.transformer import LightningDataTransformer
 from src.transformation.disruption_calculator import DisruptionCalculator
@@ -66,6 +67,10 @@ class DataPipeline:
         self.flight_sources = {
             "opensky": OpenSkyAlternative(lat=48.8527, lon=2.3510, radius_km=100)
         }
+        
+        # Initialize storm forecast (Open-Meteo - FREE, no API key)
+        self.storm_forecast = StormForecastAPI(latitude=48.8527, longitude=2.3510)
+        self.storm_zone_manager = StormRiskZoneManager(center_lat=48.8527, center_lon=2.3510)
         
         # Initialize MinIO storage (object storage) - PRIMARY DATA LAKE
         try:
@@ -579,6 +584,10 @@ class DataPipeline:
                     if flight_transformation_result.get("status") != "failed":
                         self.last_flights_df = flight_transformation_result.get("dataframe")
             
+            # ===== STORM FORECAST =====
+            # Analyze storm risks for safe flight operations
+            self.run_storm_forecast()
+            
             # Final summary
             self.logger.info("")
             self.logger.info("=" * 70)
@@ -598,6 +607,55 @@ class DataPipeline:
                     self.db_connection.disconnect()
                 except:
                     pass
+    
+    def run_storm_forecast(self) -> None:
+        """Run storm forecast analysis and generate risk zones.
+        
+        Analyzes next 7 days for thunderstorms and creates risk zones.
+        Alerts if severe storms detected and active flights in area.
+        """
+        self.logger.info("")
+        self.logger.info("STORM FORECAST ANALYSIS")
+        self.logger.info("-" * 70)
+        
+        try:
+            # Fetch 7-day storm forecast
+            forecast_result = self.storm_forecast.extract()
+            
+            if forecast_result['status'] != 'success':
+                self.logger.warning(f"Storm forecast unavailable: {forecast_result.get('error')}")
+                return
+            
+            forecasts = forecast_result.get('forecasts', [])
+            severe_storms = forecast_result.get('severe_storms', 0)
+            
+            self.logger.info(f"Forecast received: {len(forecasts)} days, {severe_storms} severe day(s)")
+            
+            if severe_storms > 0:
+                # Generate risk zones
+                zones = self.storm_zone_manager.create_risk_grid(forecasts, grid_size=5)
+                self.logger.warning(f"STORM ALERT: {severe_storms} day(s) with severe thunderstorms!")
+                self.logger.warning(f"Generated {len(zones)} risk zones")
+                
+                # Check if flights at risk
+                active_flights = 0
+                if self.last_flights_df is not None:
+                    active_flights = len(self.last_flights_df)
+                
+                summary = self.storm_zone_manager.create_dashboard_summary(
+                    forecasts, 
+                    active_flights=active_flights
+                )
+                
+                self.logger.warning(f"Alert Level: {summary['alert_level']}")
+                if summary['recommendations']:
+                    for rec in summary['recommendations']:
+                        self.logger.warning(f"  - {rec}")
+            else:
+                self.logger.info("No severe storms forecast for next 7 days")
+        
+        except Exception as e:
+            self.logger.error(f"Storm forecast analysis failed: {str(e)}")
 
 
 def main():
