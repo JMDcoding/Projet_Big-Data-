@@ -113,3 +113,6 @@ notebooks/data/
 !data/processed/.gitkeep
 !logs/.gitkeep
 !src/database/.gitkeep
+
+# MinIO executable (too large for GitHub)
+minio.exe
