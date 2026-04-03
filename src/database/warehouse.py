@@ -302,7 +302,7 @@ class DataWarehouse:
             data: List of lightning records
         """
         query = """
-        INSERT INTO lightning 
+        INSERT INTO lightning_strikes 
         (lightning_id, latitude, longitude, altitude, intensity, timestamp, source, processed_at)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
@@ -487,21 +487,17 @@ class DataWarehouse:
         
         Args:
             data: List of disruption records with keys:
-                - flight_id: Flight identifier (can be numeric ID or flight_number string)
+                - flight_id: Flight database ID (numeric)
                 - distance_km: Distance to nearest lightning
                 - time_difference_minutes: Time diff to lightning event
                 - disruption_probability: Risk probability (0-1)
                 - risk_level: CRITICAL/HIGH/MEDIUM/LOW/MINIMAL
-                - lightning_count_nearby: Count of nearby lightning strikes (optional)
         """
-        # Try to insert with numeric ID, fallback to text-based if needed
         try:
             cursor = self.db.connection.cursor()
             
             for record in data:
-                flight_id = record.get("flight_id")
-                
-                # Try numeric ID first, if it's not a number, use the text version
+                # flight_id should always be numeric from populate_demo_data
                 query = """
                 INSERT INTO flight_disruptions 
                 (flight_id, distance_km, time_difference_minutes, 
@@ -509,25 +505,17 @@ class DataWarehouse:
                 VALUES (%s, %s, %s, %s, %s, NOW())
                 """
                 
-                try:
-                    # Try to convert to int if possible
-                    flight_id_value = int(flight_id) if isinstance(flight_id, (int, float)) or (isinstance(flight_id, str) and flight_id.isdigit()) else flight_id
-                    cursor.execute(query, (
-                        flight_id_value,
-                        record.get("distance_km"),
-                        record.get("time_difference_minutes"),
-                        record.get("disruption_probability"),
-                        record.get("risk_level")
-                    ))
-                except (ValueError, TypeError):
-                    # If flight_id is not numeric, just skip saving to DB for now
-                    # This handles the case where flight_id is a flight_number string
-                    self.logger.debug(f"Skipping DB insert for flight_id {flight_id} (not numeric)")
-                    continue
+                cursor.execute(query, (
+                    record.get("flight_id"),
+                    record.get("distance_km"),
+                    record.get("time_difference_minutes"),
+                    record.get("disruption_probability"),
+                    record.get("risk_level")
+                ))
             
             self.db.connection.commit()
             cursor.close()
-            self.logger.info(f"Inserted disruption records into database")
+            self.logger.info(f"Inserted {len(data)} disruption records into database")
         
         except Exception as e:
             self.logger.error(f"Error inserting disruption data: {str(e)}")

@@ -1,343 +1,489 @@
-# Big Data Pipeline - Lightning & Flight Disruption Analysis
+# ⚡ Lightning & Flight Disruption Dashboard
 
-## 📋 Project Overview
+**Moniteur en temps réel des éclairs et des perturbations de vol**
 
-This project implements a complete data pipeline for real-time lightning strike monitoring and flight disruption analysis. It follows modern data engineering practices with ETL architecture (Extract, Transform, Load).
-
-**Key Features:**
-- ⚡ Real-time lightning data from Blitzortung API
-- ✈️ Flight data ingestion via web scraping
-- 🔄 Full ETL pipeline with Python OOP
-- 💾 Data Lake storage (JSON/CSV)
-- 🗄️ PostgreSQL Data Warehouse
-- 📊 Interactive Streamlit Dashboard
+Un dashboard Streamlit pour analyser les données d'éclairs et calculer les perturbations potentielles de vols basées sur leur proximité spatiale et temporelle.
 
 ---
 
-## 🏗️ Project Structure
+## 🚀 Démarrage Rapide (5 minutes)
 
-```
-Projet_Big-Data-/
-├── src/                           # Main source code
-│   ├── __init__.py
-│   ├── ingestion/                # Data collection
-│   │   ├── __init__.py
-│   │   ├── base.py              # Abstract DataSource
-│   │   ├── api_client.py        # Blitzortung API client
-│   │   └── web_scraper.py       # Web scraping classes
-│   ├── storage/                 # Data Lake storage
-│   │   ├── __init__.py
-│   │   └── data_lake.py         # JSON/CSV storage classes
-│   ├── transformation/          # Data processing
-│   │   ├── __init__.py
-│   │   └── transformer.py       # Transformation logic
-│   ├── database/                # Data Warehouse
-│   │   ├── __init__.py
-│   │   └── warehouse.py         # PostgreSQL management
-│   ├── visualization/           # Dashboard
-│   │   ├── __init__.py
-│   │   └── dashboard.py         # Streamlit UI
-│   └── utils/                   # Utilities
-│       ├── __init__.py
-│       ├── logger.py            # Logging setup
-│       └── helpers.py           # Helper functions
-├── config/                       # Configuration
-│   ├── config.py                # Config classes
-│   └── .env.example             # Environment variables template
-├── data/                         # Data storage
-│   ├── raw/                     # Raw data (Data Lake)
-│   └── processed/               # Processed data
-├── logs/                         # Logging
-├── main.py                       # Main pipeline entry point
-├── app.py                        # Streamlit dashboard
-├── requirements.txt              # Python dependencies
-├── .gitignore                    # Git ignore rules
-└── README.md                     # This file
-```
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Python 3.8+
-- PostgreSQL 12+
-- pip or conda
-
-### 1. Clone and Setup Virtual Environment
+### 1. Cloner le projet
 
 ```bash
-# Navigate to project directory
-cd "path/to/Projet_Big-Data-"
+git clone <repository-url>
+cd Projet_Big-Data-
+```
 
-# Create virtual environment
+### 2. Installer PostgreSQL et créer la base
+
+```bash
+# Windows
+# Télécharger et installer PostgreSQL 18:
+# https://www.postgresql.org/download/windows/
+
+# Après installation, créer la base de données:
+psql -U postgres -c "CREATE DATABASE lightning_db;"
+```
+
+### 3. Setup Python et dépendances
+
+```bash
+# Créer un environnement virtuel
 python -m venv venv
 
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On MacOS/Linux:
+# Activer l'env
+# Windows:
+.\venv\Scripts\Activate.ps1
+# Linux/Mac:
 source venv/bin/activate
-```
 
-### 2. Install Dependencies
-
-```bash
+# Installer les dépendances
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment Variables
+### 4. Initialiser la base de données
 
 ```bash
-# Copy template
-copy config\.env.example config\.env
-
-# Edit config/.env with your settings:
-# - Database credentials
-# - API configuration
-# - Data paths
+python scripts/setup_database.py
 ```
 
-### 4. Initialize Database
+### 5. Charger les données
 
 ```bash
-# Create PostgreSQL database
-createdb lightning_db
+# Option A: Données de test (recommandé pour démarrage)
+python scripts/populate_demo.py
 
-# The pipeline will create tables automatically on first run
+# Option B: Données réelles depuis API
+python scripts/refresh_data.py
 ```
 
-### 5. Run the Pipeline
+### 6. Lancer le dashboard
 
 ```bash
-# Main pipeline
-python main.py
-
-# Or run dashboard
 streamlit run app.py
 ```
 
----
-
-## 🔄 Pipeline Workflow
-
-### 1. **Ingestion** 
-- Fetch lightning data from Blitzortung API
-- Scrape flight information from airline websites
-- Validate incoming data
-
-### 2. **Storage (Data Lake)**
-- Store raw data in JSON/CSV format
-- Maintain data lineage and history
-- Enable data recovery
-
-### 3. **Transformation**
-- Clean and standardize data
-- Handle missing values
-- Add computed columns
-- Merge multiple data sources
-
-### 4. **Loading (Data Warehouse)**
-- Create normalized tables
-- Load transformed data into PostgreSQL
-- Set up relationships between tables
-
-### 5. **Visualization**
-- Interactive dashboard with Streamlit
-- Real-time lightning map
-- Flight status monitoring
-- Disruption risk analysis
+**➡️ Dashboard disponible à:** http://localhost:8501
 
 ---
 
-## 📦 Key Classes and Architecture
+## 📊 Architecture du Projet
 
-### Ingestion Module
-```python
-# Base class for all data sources
-class DataSource(ABC):
-    def fetch() -> Any
-    def validate(data) -> bool
-    def extract() -> Any
-
-# Specific implementations
-class BlitzortungAPI(DataSource)
-class WebScraper(DataSource)
 ```
-
-### Storage Module
-```python
-class DataLake(ABC):
-    def save(data, filename) -> str
-    def load(filename) -> Any
-    def delete(filename) -> bool
-
-class JSONDataLake(DataLake)
-class CSVDataLake(DataLake)
-```
-
-### Transformation Module
-```python
-class Transformer(ABC):
-    def transform(data) -> Any
-
-class LightningDataTransformer(Transformer)
-class FlightDataTransformer(Transformer)
-class DataMerger(Transformer)
-```
-
-### Database Module
-```python
-class PostgreSQLConnection(DatabaseConnection):
-    def connect()
-    def execute(query, params) -> List
-
-class DataWarehouse:
-    def create_lightning_table()
-    def insert_lightning_data(data)
-    def query_lightning_data(filters)
-```
-
-### Visualization Module
-```python
-class LightningDashboard:
-    def render_header()
-    def render_sidebar() -> Dict
-    def render_lightning_map()
-    def render_timeline()
-    def run()
+Projet_Big-Data-/
+├── README.md                 # Ce fichier (tutoriel complet)
+├── requirements.txt          # Dépendances Python
+├── app.py                    # Streamlit app (point d'entrée)
+│
+├── config/                   # Configuration
+│   ├── __init__.py
+│   └── config.py            # Variables d'env, DB, logging
+│
+├── src/                      # Code source principal (POO)
+│   ├── __init__.py
+│   ├── database/            # Couche base de données
+│   │   ├── __init__.py
+│   │   └── warehouse.py     # DataWarehouse, connexions
+│   │
+│   ├── ingestion/           # APIs et ingestion de données
+│   │   ├── __init__.py
+│   │   ├── base.py          # Classe abstraite API
+│   │   ├── api_client.py    # Client HTTP générique
+│   │   ├── alternative_apis.py
+│   │   ├── storm_forecast.py
+│   │   └── web_scraper.py
+│   │
+│   ├── transformation/      # Transformation et calculs
+│   │   ├── __init__.py
+│   │   ├── transformer.py   # ETL de base
+│   │   ├── disruption_calculator.py
+│   │   └── trajectory_predictor.py
+│   │
+│   ├── storage/             # Stockage (MinIO, etc.)
+│   │   ├── __init__.py
+│   │   └── data_lake.py
+│   │
+│   ├── utils/               # Utilitaires
+│   │   ├── __init__.py
+│   │   ├── logger.py        # Logging
+│   │   ├── helpers.py       # Fonctions utilitaires
+│   │   └── refresh_service.py
+│   │
+│   └── visualization/       # Dashboard Streamlit
+│       ├── __init__.py
+│       ├── dashboard.py     # Classe LightningDashboard
+│       └── risk_zones.py    # Zones de risque
+│
+├── scripts/                 # Scripts utilitaires
+│   ├── __init__.py
+│   ├── setup_database.py   # Initialisation DB
+│   ├── refresh_data.py     # Orchestration refresh
+│   ├── fetch_lightning.py  # Fetch éclairs
+│   ├── fetch_flights.py    # Fetch vols
+│   ├── populate_demo.py    # Données de test
+│   └── reset_data.py       # Nettoyage
+│
+├── tests/                   # Tests unitaires
+│   ├── __init__.py
+│   ├── test_database.py
+│   ├── test_apis.py
+│   └── test_disruptions.py
+│
+├── notebooks/              # Jupyter notebooks
+│   └── eda_analysis.ipynb  # Exploration de données
+│
+├── data/                   # Données locales
+└── logs/                   # Fichiers de log
 ```
 
 ---
 
-## ⚙️ Configuration
+## 🔧 Configuration
 
-Edit `config/.env`:
+### Variables d'environnement (`.env`)
 
-```ini
-# Database
+Créez un fichier `.env` à la racine:
+
+```env
+# PostgreSQL
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=5433
 DB_NAME=lightning_db
 DB_USER=postgres
-DB_PASSWORD=your_password
+DB_PASSWORD=votre_mot_de_passe
 
-# API
-API_BASE_URL=https://www.blitzortung.org/en/live_lightning_maps.php
-API_TIMEOUT=30
+# APIs (optionnels)
+AIRLABS_API_KEY=votre_clé_airlabs
+OPENSKY_USERNAME=votre_username
+OPENSKY_PASSWORD=votre_password
 
-# Data paths
-DATA_RAW_PATH=./data/raw
-DATA_PROCESSED_PATH=./data/processed
+# MinIO (optionnel)
+MINIO_ENDPOINT=localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
 
 # Logging
 LOG_LEVEL=INFO
-LOG_FILE=./logs/app.log
+LOG_FILE=logs/app.log
 ```
 
----
+### Configuration Python (`config/config.py`)
 
-## 📊 Database Schema
-
-### lightning_strikes table
-- `id`: Primary key
-- `lightning_id`: Strike identifier
-- `latitude`, `longitude`: Coordinates
-- `altitude`: Strike altitude
-- `intensity`: Strike intensity
-- `timestamp`: Strike time
-- `processed_at`: Processing time
-
-### flights table
-- `id`: Primary key
-- `flight_number`: Flight ID
-- `departure`, `arrival`: Airports
-- `departure_time`, `arrival_time`: Times
-- `aircraft_type`: Aircraft model
-
-### flight_disruptions table
-- `id`: Primary key
-- `flight_id`: Reference to flight
-- `lightning_id`: Reference to lightning strike
-- `distance_km`: Distance to strike
-- `risk_level`: Risk level (Low/Medium/High/Critical)
-- `disruption_probability`: Probability score
+- Tous les paramètres DB
+- Chemins des fichiers
+- Paramètres logging
+- Configuration des APIs
 
 ---
 
-## 🎯 Disruption Analysis
+## 📈 Utilisation
 
-The system assesses flight disruption risk by analyzing:
+### Dashboard Principal
 
-1. **Distance Factor** (40%): How far is the lightning from flight path?
-2. **Time Factor** (40%): When will the lightning strike vs. flight time?
-3. **Intensity Factor** (20%): How intense is the lightning strike?
+**URL:** http://localhost:8501
 
-Risk levels are calculated as:
-- **Low**: Probability < 20%
-- **Medium**: Probability 20-50%
-- **High**: Probability 50-80%
-- **Critical**: Probability > 80%
+#### Onglets disponibles:
 
----
+1. **📍 Lightning Map** - Carte des éclairs en Europe
+2. **✈️ Flights** - Tableau des vols chargés
+3. **🚨 Disruptions** - Analyses des perturbations
 
-## 🧪 Testing
+#### Contrôles Sidebar:
 
-Run tests for individual modules:
+- **🔄 Refresh** - Recharger les données depuis DB
+- **Sliders** - Filtrer par intensité d'éclair
+- **Date Picker** - Sélectionner plage de dates
+- **Timeline** - Vue hourly/daily des éclairs
+
+### Scripts Utilitaires
+
+#### Charger les données (recommandé d'abord):
 
 ```bash
-# Test API client
-python -m pytest tests/test_api_client.py
+# Données de test (13 records d'éclairs)
+python scripts/populate_demo.py
 
-# Test transformers
-python -m pytest tests/test_transformer.py
+# OU données réelles (Open-Meteo + Airlabs)
+python scripts/refresh_data.py
+```
 
-# Test database
-python -m pytest tests/test_warehouse.py
+#### Réinitialiser complètement:
+
+```bash
+# Supprimer tous les enregistrements
+python scripts/reset_data.py
+
+# Recréer les tables
+python scripts/setup_database.py
+
+# Recharger
+python scripts/populate_demo.py
+```
+
+#### Vérifier l'état:
+
+```bash
+# Vérifier les données
+python scripts/verify_data.py
 ```
 
 ---
 
-## 📈 Monitoring and Logging
+## 🌩️ Données & APIs
 
-All operations are logged to:
-- **Console**: Real-time output
-- **File**: `logs/app.log` (rotating file handler)
+### Sources de Données
 
-Log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
+| Source | Type | API | Clé Requise |
+|--------|------|-----|-------------|
+| **Open-Meteo** | Météo/Tempêtes | Forecast (7j) | ❌ Non |
+| **Airlabs** | Données de vols | Historique complet | ✅ Oui (gratuit) |
+| **OpenSky Network** | Positions vols | Tracking ADS-B | ❌ Non |
+
+### Schéma de Données
+
+#### `lightning_strikes`
+```sql
+- lightning_id (PK): VARCHAR(255)
+- latitude: DECIMAL(10,8)
+- longitude: DECIMAL(11,8)
+- intensity: DECIMAL(5,2)          -- 0-100
+- timestamp: TIMESTAMP
+- source: VARCHAR(100)             -- Open-Meteo, Demo, etc.
+```
+
+#### `flights`
+```sql
+- id (PK): INTEGER (auto-increment)
+- flight_number: VARCHAR(20)
+- departure: VARCHAR(4)             -- IATA code
+- arrival: VARCHAR(4)               -- IATA code
+- departure_time: TIMESTAMP         -- RÉEL depuis API
+- arrival_time: TIMESTAMP           -- RÉEL depuis API
+- source: VARCHAR(100)              -- Airlabs, OpenSky, etc.
+```
+
+#### `flight_disruptions`
+```sql
+- id (PK): INTEGER
+- flight_id: VARCHAR(255) (FK)
+- lightning_id: VARCHAR(255) (FK)
+- distance_km: FLOAT
+- risk_level: VARCHAR(50)           -- LOW, MEDIUM, HIGH
+- disruption_probability: FLOAT     -- 0-1
+```
 
 ---
 
-## 🔐 Security Notes
+## 🔌 API Integration
 
-⚠️ **Important:**
-- Never commit `.env` file with real credentials
-- Use environment variables for sensitive data
-- Set proper PostgreSQL user permissions
-- Keep dependencies updated
+### Ajouter une nouvelle source de données
+
+1. Créer une classe API dans `src/ingestion/`:
+
+```python
+from src.ingestion.base import BaseAPI
+
+class MonAPI(BaseAPI):
+    """Nouvelle API source."""
+    
+    def __init__(self, api_key=None):
+        super().__init__("MonAPI", api_key)
+    
+    def fetch_data(self, params):
+        """Fetch depuis API."""
+        # Implémentation
+        pass
+    
+    def transform_data(self, raw_data):
+        """Transformer au format standardisé."""
+        # Implémentation
+        pass
+```
+
+2. Intégrer dans scripts:
+
+```python
+# scripts/fetch_my_data.py
+from src.ingestion.mon_api import MonAPI
+
+api = MonAPI(api_key="key")
+data = api.fetch_data(params)
+transformed = api.transform_data(data)
+warehouse.insert_lightning_data(transformed)
+```
 
 ---
 
-## 🤝 Contributing
+## 🧪 Tests
 
-1. Create a new branch for features
-2. Follow PEP 8 style guide
-3. Add docstrings to all classes and methods
-4. Test thoroughly before merging
+Exécuter les tests:
 
----
+```bash
+# Tous les tests
+pytest tests/
 
-## 📝 License
-
-This project is proprietary - Emineo Education
-
----
-
-## 📞 Support
-
-For issues or questions, contact the development team.
+# Tests spécifiques
+pytest tests/test_database.py -v
+pytest tests/test_apis.py -v
+```
 
 ---
 
-**Created:** April 2026  
-**Last Updated:** April 2026
+## 🐛 Troubleshooting
+
+### Erreur: "ERREUR: la relation 'flight_disruptions' n'existe pas"
+
+**Solution:**
+```bash
+python scripts/setup_database.py
+```
+
+### Erreur: "could not connect to PostgreSQL"
+
+**Vérifier:**
+1. PostgreSQL s'exécute: `services.msc`
+2. Port correct (5433): Check `postgresql.conf`
+3. Credentials dans `.env` correctes
+4. Database existe: `psql -U postgres -l`
+
+### Pas de données affichées
+
+**Options:**
+```bash
+# 1. Charger données test
+python scripts/populate_demo.py
+
+# 2. Vérifier données en DB
+python scripts/verify_data.py
+
+# 3. Recharger données réelles
+python scripts/refresh_data.py
+```
+
+### Dashboard affiche "no data" après refresh
+
+**Solution:**
+1. Cliquer le bouton "🔄 Refresh" du dashboard
+2. Aller sur onglet "✈️ Flights" et vérifier
+3. Si toujours vide: `python scripts/populate_demo.py`
+
+---
+
+## 📚 Documentation Supplémentaire
+
+### Structure POO
+
+Le projet utilise une architecture orientée objet:
+
+- **BaseAPI**: Classe abstraite pour toutes les APIs
+- **DataWarehouse**: Couche d'accès base de données
+- **LightningDashboard**: Dashboard avec méthodes de rendu
+- **DisruptionCalculator**: Logique de calcul des perturbations
+
+### Patterns Utilisés
+
+- **Factory Pattern**: Création d'instances API
+- **Singleton Pattern**: Configuration, Logger
+- **Observer Pattern**: Refresh service (optionnel)
+- **MVC Pattern**: Streamlit + Models + Views
+
+---
+
+## 🚀 Déploiement
+
+### Local (Development)
+```bash
+streamlit run app.py
+```
+
+### Production (Recommandé)
+
+```bash
+# Utiliser Streamlit Cloud ou Docker
+streamlit run app.py --server.port 8080
+```
+
+### Docker
+
+```dockerfile
+FROM python:3.9
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["streamlit", "run", "app.py"]
+```
+
+Lancer:
+```bash
+docker build -t dashboard .
+docker run -p 8501:8501 dashboard
+```
+
+---
+
+## 🤝 Contribution
+
+Pour contribuer au projet:
+
+1. Fork le repository
+2. Créer une branche: `git checkout -b feature/ma-feature`
+3. Commit: `git commit -am 'Ajouter feature'`
+4. Push: `git push origin feature/ma-feature`
+5. Créer une PR
+
+### Code Style
+
+- Utiliser `black` pour le formatage
+- Respecter PEP8
+- Ajouter docstrings pour toutes les classes/fonctions
+- Ajouter des tests pour les nouvelles features
+
+---
+
+## 📝 Licensing
+
+Projet d'étude - Utilisation libre
+
+---
+
+## 🙋 Support
+
+**Questions?** 
+- Consulter la section Troubleshooting
+- Vérifier les logs: `logs/app.log`
+- Examiner les tests: `tests/`
+
+**Problèmes?**
+- Recréer la base: `python scripts/setup_database.py`
+- Recharger les données: `python scripts/populate_demo.py`
+- Redémarrer l'app: `Ctrl+C` + `streamlit run app.py`
+
+---
+
+## 📊 Métriques & Monitoring
+
+Le dashboard affiche automatiquement:
+
+- **Total Lightning Strikes**: Nombre total d'éclairs
+- **Total Flights**: Nombre de vols chargés
+- **At-Risk Flights**: Vols à risque (probabilité > 50%)
+- **Avg Strike Intensity**: Intensité moyenne des éclairs
+
+---
+
+## 🔄 Auto-Refresh (Optionnel)
+
+Pour activer le refresh automatique toutes les 5 minutes:
+
+```bash
+python -m src.utils.refresh_service
+```
+
+(Nécessite MinIO ou S3 pour stockage distribuable)
+
+---
+
+**Dernier update:** Avril 2026
+**Version:** 2.0 - POO & Stable Release

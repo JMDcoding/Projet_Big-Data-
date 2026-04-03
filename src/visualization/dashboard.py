@@ -146,10 +146,13 @@ class LightningDashboard:
             # Add spacing before date picker
             st.divider()
             
-            # Date range filter (moved to bottom for better accessibility)
+            # Date range filter - Streamlit handles session state automatically
+            st.subheader("📅 Date Range")
+            
             date_range = st.date_input(
-                "📅 Select Date Range",
-                value=(start_date, today)
+                "Select date range",
+                value=(start_date, today),
+                label_visibility="collapsed"
             )
             
             filters = {

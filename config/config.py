@@ -86,3 +86,13 @@ def get_config(env: str = None) -> Config:
     }
     
     return config_map.get(env, DevelopmentConfig)
+
+
+# Export DATABASE_CONFIG for backward compatibility
+DATABASE_CONFIG = {
+    "host": Config.DB_HOST,
+    "port": Config.DB_PORT,
+    "database": Config.DB_NAME,
+    "user": Config.DB_USER,
+    "password": Config.DB_PASSWORD
+}

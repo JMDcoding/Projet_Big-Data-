@@ -1,34 +1,22 @@
-#!/usr/bin/env python
-"""Check lightning table schema."""
-from src.database.warehouse import PostgreSQLConnection
-from config.config import get_config
+﻿import sys
+from pathlib import Path
+sys.path.insert(0, str(Path.cwd()))
+from config.config import Config
+import psycopg2
 
-config = get_config()
-db = PostgreSQLConnection(
-    host=config.DB_HOST, 
-    port=config.DB_PORT, 
-    database=config.DB_NAME, 
-    user=config.DB_USER, 
-    password=config.DB_PASSWORD
-)
-db.connect()
-
-# Check lightning table structure
-cursor = db.connection.cursor()
-query = """
-SELECT column_name, data_type, is_nullable
-FROM information_schema.columns
-WHERE table_name = 'lightning'
-ORDER BY ordinal_position
-"""
-cursor.execute(query)
-
-cols = cursor.fetchall()
-print('\nLightning Table Columns:')
-print("-" * 50)
-for col in cols:
-    nullable = "✓" if col[2] == 'YES' else "✗"
-    print(f'  {col[0]:20} | {col[1]:15} | Nullable: {nullable}')
-
-cursor.close()
-db.disconnect()
+try:
+    conn = psycopg2.connect(
+        host=Config.DB_HOST,
+        port=Config.DB_PORT,
+        database=Config.DB_NAME,
+        user=Config.DB_USER,
+        password=Config.DB_PASSWORD
+    )
+    cursor = conn.cursor()
+    cursor.execute("SELECT column_name, data_type FROM information_schema.columns WHERE table_name='lightning_strikes'")
+    print("LIGHTNING_STRIKES TABLE COLUMNS:")
+    for row in cursor.fetchall():
+        print(f"  {row[0]}: {row[1]}")
+    conn.close()
+except Exception as e:
+    print(f"Error: {e}")
