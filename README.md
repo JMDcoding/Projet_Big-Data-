@@ -1,489 +1,146 @@
-# ⚡ Lightning & Flight Disruption Dashboard
+# Lightning & Flight Disruption Dashboard
 
-**Moniteur en temps réel des éclairs et des perturbations de vol**
+Application Python de démonstration pour ingérer des données météo/vols, les stocker en base PostgreSQL, et les afficher dans un dashboard Streamlit.
 
-Un dashboard Streamlit pour analyser les données d'éclairs et calculer les perturbations potentielles de vols basées sur leur proximité spatiale et temporelle.
+## Ce que fait le projet
 
----
+Le projet suit un flux simple:
 
-## 🚀 Démarrage Rapide (5 minutes)
+1. Ingestion de données éclair et vol depuis les sources disponibles.
+2. Transformation et normalisation des données.
+3. Sauvegarde locale dans `data/`.
+4. Chargement en base PostgreSQL.
+5. Visualisation dans Streamlit.
+6. Vérification des volumes et du schéma via scripts dédiés.
 
-### 1. Cloner le projet
+Le point d’entrée principal du dashboard est [app.py](app.py).
 
-```bash
-git clone <repository-url>
-cd Projet_Big-Data-
-```
+## Structure utile
 
-### 2. Installer PostgreSQL et créer la base
+- [app.py](app.py): point d’entrée Streamlit.
+- [config/config.py](config/config.py): configuration de l’application et des variables d’environnement.
+- [src/database/warehouse.py](src/database/warehouse.py): connexion PostgreSQL et requêtes de lecture/écriture.
+- [src/ingestion/api_client.py](src/ingestion/api_client.py): clients d’ingestion API.
+- [src/ingestion/web_scraper.py](src/ingestion/web_scraper.py): extraction par scraping.
+- [src/storage/data_lake.py](src/storage/data_lake.py): stockage local et MinIO.
+- [src/visualization/dashboard.py](src/visualization/dashboard.py): composants du dashboard.
+- [final_verification.py](final_verification.py): vérification finale des volumes en base.
+- [verify_data.py](verify_data.py): contrôle rapide des données chargées.
 
-```bash
-# Windows
-# Télécharger et installer PostgreSQL 18:
-# https://www.postgresql.org/download/windows/
+## Prérequis
 
-# Après installation, créer la base de données:
-psql -U postgres -c "CREATE DATABASE lightning_db;"
-```
+- Python 3.14 ou compatible avec l’environnement local.
+- PostgreSQL accessible sur `localhost:5433`.
+- Un fichier `.env` à la racine du projet.
 
-### 3. Setup Python et dépendances
+## Configuration `.env`
 
-```bash
-# Créer un environnement virtuel
-python -m venv venv
-
-# Activer l'env
-# Windows:
-.\venv\Scripts\Activate.ps1
-# Linux/Mac:
-source venv/bin/activate
-
-# Installer les dépendances
-pip install -r requirements.txt
-```
-
-### 4. Initialiser la base de données
-
-```bash
-python scripts/setup_database.py
-```
-
-### 5. Charger les données
-
-```bash
-# Option A: Données de test (recommandé pour démarrage)
-python scripts/populate_demo.py
-
-# Option B: Données réelles depuis API
-python scripts/refresh_data.py
-```
-
-### 6. Lancer le dashboard
-
-```bash
-streamlit run app.py
-```
-
-**➡️ Dashboard disponible à:** http://localhost:8501
-
----
-
-## 📊 Architecture du Projet
-
-```
-Projet_Big-Data-/
-├── README.md                 # Ce fichier (tutoriel complet)
-├── requirements.txt          # Dépendances Python
-├── app.py                    # Streamlit app (point d'entrée)
-│
-├── config/                   # Configuration
-│   ├── __init__.py
-│   └── config.py            # Variables d'env, DB, logging
-│
-├── src/                      # Code source principal (POO)
-│   ├── __init__.py
-│   ├── database/            # Couche base de données
-│   │   ├── __init__.py
-│   │   └── warehouse.py     # DataWarehouse, connexions
-│   │
-│   ├── ingestion/           # APIs et ingestion de données
-│   │   ├── __init__.py
-│   │   ├── base.py          # Classe abstraite API
-│   │   ├── api_client.py    # Client HTTP générique
-│   │   ├── alternative_apis.py
-│   │   ├── storm_forecast.py
-│   │   └── web_scraper.py
-│   │
-│   ├── transformation/      # Transformation et calculs
-│   │   ├── __init__.py
-│   │   ├── transformer.py   # ETL de base
-│   │   ├── disruption_calculator.py
-│   │   └── trajectory_predictor.py
-│   │
-│   ├── storage/             # Stockage (MinIO, etc.)
-│   │   ├── __init__.py
-│   │   └── data_lake.py
-│   │
-│   ├── utils/               # Utilitaires
-│   │   ├── __init__.py
-│   │   ├── logger.py        # Logging
-│   │   ├── helpers.py       # Fonctions utilitaires
-│   │   └── refresh_service.py
-│   │
-│   └── visualization/       # Dashboard Streamlit
-│       ├── __init__.py
-│       ├── dashboard.py     # Classe LightningDashboard
-│       └── risk_zones.py    # Zones de risque
-│
-├── scripts/                 # Scripts utilitaires
-│   ├── __init__.py
-│   ├── setup_database.py   # Initialisation DB
-│   ├── refresh_data.py     # Orchestration refresh
-│   ├── fetch_lightning.py  # Fetch éclairs
-│   ├── fetch_flights.py    # Fetch vols
-│   ├── populate_demo.py    # Données de test
-│   └── reset_data.py       # Nettoyage
-│
-├── tests/                   # Tests unitaires
-│   ├── __init__.py
-│   ├── test_database.py
-│   ├── test_apis.py
-│   └── test_disruptions.py
-│
-├── notebooks/              # Jupyter notebooks
-│   └── eda_analysis.ipynb  # Exploration de données
-│
-├── data/                   # Données locales
-└── logs/                   # Fichiers de log
-```
-
----
-
-## 🔧 Configuration
-
-### Variables d'environnement (`.env`)
-
-Créez un fichier `.env` à la racine:
+Créer un fichier `.env` à la racine avec au minimum:
 
 ```env
-# PostgreSQL
 DB_HOST=localhost
 DB_PORT=5433
 DB_NAME=lightning_db
 DB_USER=postgres
-DB_PASSWORD=votre_mot_de_passe
-
-# APIs (optionnels)
-AIRLABS_API_KEY=votre_clé_airlabs
-OPENSKY_USERNAME=votre_username
-OPENSKY_PASSWORD=votre_password
-
-# MinIO (optionnel)
-MINIO_ENDPOINT=localhost:9000
+DB_PASSWORD=postgres
+MINIO_HOST=localhost:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
-
-# Logging
+MINIO_BUCKET=lightning-data
+MINIO_USE_SSL=false
 LOG_LEVEL=INFO
-LOG_FILE=logs/app.log
 ```
 
-### Configuration Python (`config/config.py`)
-
-- Tous les paramètres DB
-- Chemins des fichiers
-- Paramètres logging
-- Configuration des APIs
-
----
-
-## 📈 Utilisation
-
-### Dashboard Principal
-
-**URL:** http://localhost:8501
-
-#### Onglets disponibles:
-
-1. **📍 Lightning Map** - Carte des éclairs en Europe
-2. **✈️ Flights** - Tableau des vols chargés
-3. **🚨 Disruptions** - Analyses des perturbations
-
-#### Contrôles Sidebar:
-
-- **🔄 Refresh** - Recharger les données depuis DB
-- **Sliders** - Filtrer par intensité d'éclair
-- **Date Picker** - Sélectionner plage de dates
-- **Timeline** - Vue hourly/daily des éclairs
-
-### Scripts Utilitaires
-
-#### Charger les données (recommandé d'abord):
+## Installation
 
 ```bash
-# Données de test (13 records d'éclairs)
-python scripts/populate_demo.py
-
-# OU données réelles (Open-Meteo + Airlabs)
-python scripts/refresh_data.py
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-#### Réinitialiser complètement:
+## Démarrage avec Docker
 
 ```bash
-# Supprimer tous les enregistrements
-python scripts/reset_data.py
-
-# Recréer les tables
-python scripts/setup_database.py
-
-# Recharger
-python scripts/populate_demo.py
+docker compose up --build
 ```
 
-#### Vérifier l'état:
+La pile démarre alors:
 
-```bash
-# Vérifier les données
-python scripts/verify_data.py
-```
+- PostgreSQL sur `localhost:5433`
+- MinIO sur `localhost:9000` et `localhost:9001`
+- initialisation de la base via `db-init`
+- chargement des données de démonstration via `demo-data`
+- dashboard Streamlit sur `http://localhost:8505`
 
----
+Le service `demo-data` alimente la base avec un jeu de démonstration contenant des éclairs, des vols et des perturbations.
 
-## 🌩️ Données & APIs
+## Lancer le programme
 
-### Sources de Données
-
-| Source | Type | API | Clé Requise |
-|--------|------|-----|-------------|
-| **Open-Meteo** | Météo/Tempêtes | Forecast (7j) | ❌ Non |
-| **Airlabs** | Données de vols | Historique complet | ✅ Oui (gratuit) |
-| **OpenSky Network** | Positions vols | Tracking ADS-B | ❌ Non |
-
-### Schéma de Données
-
-#### `lightning_strikes`
-```sql
-- lightning_id (PK): VARCHAR(255)
-- latitude: DECIMAL(10,8)
-- longitude: DECIMAL(11,8)
-- intensity: DECIMAL(5,2)          -- 0-100
-- timestamp: TIMESTAMP
-- source: VARCHAR(100)             -- Open-Meteo, Demo, etc.
-```
-
-#### `flights`
-```sql
-- id (PK): INTEGER (auto-increment)
-- flight_number: VARCHAR(20)
-- departure: VARCHAR(4)             -- IATA code
-- arrival: VARCHAR(4)               -- IATA code
-- departure_time: TIMESTAMP         -- RÉEL depuis API
-- arrival_time: TIMESTAMP           -- RÉEL depuis API
-- source: VARCHAR(100)              -- Airlabs, OpenSky, etc.
-```
-
-#### `flight_disruptions`
-```sql
-- id (PK): INTEGER
-- flight_id: VARCHAR(255) (FK)
-- lightning_id: VARCHAR(255) (FK)
-- distance_km: FLOAT
-- risk_level: VARCHAR(50)           -- LOW, MEDIUM, HIGH
-- disruption_probability: FLOAT     -- 0-1
-```
-
----
-
-## 🔌 API Integration
-
-### Ajouter une nouvelle source de données
-
-1. Créer une classe API dans `src/ingestion/`:
-
-```python
-from src.ingestion.base import BaseAPI
-
-class MonAPI(BaseAPI):
-    """Nouvelle API source."""
-    
-    def __init__(self, api_key=None):
-        super().__init__("MonAPI", api_key)
-    
-    def fetch_data(self, params):
-        """Fetch depuis API."""
-        # Implémentation
-        pass
-    
-    def transform_data(self, raw_data):
-        """Transformer au format standardisé."""
-        # Implémentation
-        pass
-```
-
-2. Intégrer dans scripts:
-
-```python
-# scripts/fetch_my_data.py
-from src.ingestion.mon_api import MonAPI
-
-api = MonAPI(api_key="key")
-data = api.fetch_data(params)
-transformed = api.transform_data(data)
-warehouse.insert_lightning_data(transformed)
-```
-
----
-
-## 🧪 Tests
-
-Exécuter les tests:
-
-```bash
-# Tous les tests
-pytest tests/
-
-# Tests spécifiques
-pytest tests/test_database.py -v
-pytest tests/test_apis.py -v
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Erreur: "ERREUR: la relation 'flight_disruptions' n'existe pas"
-
-**Solution:**
-```bash
-python scripts/setup_database.py
-```
-
-### Erreur: "could not connect to PostgreSQL"
-
-**Vérifier:**
-1. PostgreSQL s'exécute: `services.msc`
-2. Port correct (5433): Check `postgresql.conf`
-3. Credentials dans `.env` correctes
-4. Database existe: `psql -U postgres -l`
-
-### Pas de données affichées
-
-**Options:**
-```bash
-# 1. Charger données test
-python scripts/populate_demo.py
-
-# 2. Vérifier données en DB
-python scripts/verify_data.py
-
-# 3. Recharger données réelles
-python scripts/refresh_data.py
-```
-
-### Dashboard affiche "no data" après refresh
-
-**Solution:**
-1. Cliquer le bouton "🔄 Refresh" du dashboard
-2. Aller sur onglet "✈️ Flights" et vérifier
-3. Si toujours vide: `python scripts/populate_demo.py`
-
----
-
-## 📚 Documentation Supplémentaire
-
-### Structure POO
-
-Le projet utilise une architecture orientée objet:
-
-- **BaseAPI**: Classe abstraite pour toutes les APIs
-- **DataWarehouse**: Couche d'accès base de données
-- **LightningDashboard**: Dashboard avec méthodes de rendu
-- **DisruptionCalculator**: Logique de calcul des perturbations
-
-### Patterns Utilisés
-
-- **Factory Pattern**: Création d'instances API
-- **Singleton Pattern**: Configuration, Logger
-- **Observer Pattern**: Refresh service (optionnel)
-- **MVC Pattern**: Streamlit + Models + Views
-
----
-
-## 🚀 Déploiement
-
-### Local (Development)
 ```bash
 streamlit run app.py
 ```
 
-### Production (Recommandé)
+Si le port `8501` est déjà utilisé:
 
 ```bash
-# Utiliser Streamlit Cloud ou Docker
-streamlit run app.py --server.port 8080
+streamlit run app.py --server.port 8506
 ```
 
-### Docker
+Le dashboard est alors accessible sur:
 
-```dockerfile
-FROM python:3.9
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY . .
-CMD ["streamlit", "run", "app.py"]
-```
+- `http://localhost:8501`
+- ou `http://localhost:8506` si tu utilises un port alternatif
+- ou `http://localhost:8505` via Docker Compose
 
-Lancer:
-```bash
-docker build -t dashboard .
-docker run -p 8501:8501 dashboard
-```
-
----
-
-## 🤝 Contribution
-
-Pour contribuer au projet:
-
-1. Fork le repository
-2. Créer une branche: `git checkout -b feature/ma-feature`
-3. Commit: `git commit -am 'Ajouter feature'`
-4. Push: `git push origin feature/ma-feature`
-5. Créer une PR
-
-### Code Style
-
-- Utiliser `black` pour le formatage
-- Respecter PEP8
-- Ajouter docstrings pour toutes les classes/fonctions
-- Ajouter des tests pour les nouvelles features
-
----
-
-## 📝 Licensing
-
-Projet d'étude - Utilisation libre
-
----
-
-## 🙋 Support
-
-**Questions?** 
-- Consulter la section Troubleshooting
-- Vérifier les logs: `logs/app.log`
-- Examiner les tests: `tests/`
-
-**Problèmes?**
-- Recréer la base: `python scripts/setup_database.py`
-- Recharger les données: `python scripts/populate_demo.py`
-- Redémarrer l'app: `Ctrl+C` + `streamlit run app.py`
-
----
-
-## 📊 Métriques & Monitoring
-
-Le dashboard affiche automatiquement:
-
-- **Total Lightning Strikes**: Nombre total d'éclairs
-- **Total Flights**: Nombre de vols chargés
-- **At-Risk Flights**: Vols à risque (probabilité > 50%)
-- **Avg Strike Intensity**: Intensité moyenne des éclairs
-
----
-
-## 🔄 Auto-Refresh (Optionnel)
-
-Pour activer le refresh automatique toutes les 5 minutes:
+## Vérifier que tout fonctionne
 
 ```bash
-python -m src.utils.refresh_service
+python final_verification.py
+python verify_data.py
 ```
 
-(Nécessite MinIO ou S3 pour stockage distribuable)
+Ces scripts vérifient les données présentes en base et les tables actuellement utilisées:
 
----
+- `lightning_strikes`
+- `flights`
+- `flight_disruptions`
 
-**Dernier update:** Avril 2026
-**Version:** 2.0 - POO & Stable Release
+## Données et traitement
+
+Le projet ne se contente pas d’afficher des données brutes. Le flux actuel inclut:
+
+- ingestion,
+- transformation,
+- stockage local,
+- chargement PostgreSQL,
+- puis affichage dans Streamlit.
+
+Le dashboard lit les données depuis PostgreSQL via [src/database/warehouse.py](src/database/warehouse.py).
+
+## Remarques importantes
+
+- Les scripts `final_verification.py` et `verify_data.py` ont été alignés sur le schéma réel de la base.
+- La table de lecture utilisée pour les éclairs est `lightning_strikes`.
+- Si tu veux repartir d’un environnement propre, conserve le `.env` mais supprime seulement les artefacts temporaires dans `data/` et `logs/`.
+
+## Dépannage rapide
+
+Si le dashboard ne démarre pas:
+
+1. Vérifie que l’environnement virtuel est activé.
+2. Vérifie que `streamlit` est installé.
+3. Vérifie que PostgreSQL écoute bien sur `localhost:5433`.
+4. Vérifie que le fichier `.env` contient `DB_PASSWORD`.
+5. Essaie un autre port avec `--server.port 8506`.
+
+Si la connexion à la base échoue, le plus fréquent est une mauvaise valeur de `DB_PASSWORD` dans `.env`.
+
+## État attendu après exécution
+
+Après un lancement correct, tu dois pouvoir:
+
+- ouvrir le dashboard dans le navigateur,
+- voir les données chargées depuis PostgreSQL,
+- exécuter les scripts de vérification sans erreur,
+- confirmer que le schéma contient bien les tables de production du projet.

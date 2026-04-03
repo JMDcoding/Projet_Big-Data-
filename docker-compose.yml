@@ -1,0 +1,119 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: lightning-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lightning_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d lightning_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: lightning-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  db-init:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lightning-db-init
+    command: python scripts/setup_database.py
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: lightning_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      MINIO_HOST: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: lightning-data
+      MINIO_USE_SSL: "false"
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    restart: "no"
+
+  demo-data:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lightning-demo-data
+    command: python scripts/generate_demo_data_final.py
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: lightning_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      MINIO_HOST: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: lightning-data
+      MINIO_USE_SSL: "false"
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    restart: "no"
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lightning-dashboard
+    command: streamlit run app.py --server.address=0.0.0.0 --server.port=8501 --server.headless=true
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: lightning_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      MINIO_HOST: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_BUCKET: lightning-data
+      MINIO_USE_SSL: "false"
+      LOG_LEVEL: INFO
+    ports:
+      - "8505:8501"
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      db-init:
+        condition: service_completed_successfully
+      demo-data:
+        condition: service_completed_successfully
+
+volumes:
+  postgres_data:
+  minio_data:

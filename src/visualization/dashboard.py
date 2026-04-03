@@ -23,19 +23,6 @@ class LightningDashboard:
     def __init__(self):
         """Initialize dashboard."""
         self.logger = logging.getLogger(self.__class__.__name__)
-        self._configure_page()
-    
-    def _configure_page(self):
-        """Configure Streamlit page settings."""
-        try:
-            st.set_page_config(
-                page_title=DashboardConfig.PAGE_TITLE,
-                layout=DashboardConfig.PAGE_LAYOUT,
-                initial_sidebar_state="expanded"
-            )
-            self.logger.info("Dashboard configured")
-        except Exception as e:
-            self.logger.error(f"Error configuring page: {str(e)}")
     
     def apply_lightning_filters(self, lightning_data: pd.DataFrame, filters: Dict) -> pd.DataFrame:
         """Apply filters to lightning data.
