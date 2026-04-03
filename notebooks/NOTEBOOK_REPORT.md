@@ -1,9 +1,9 @@
-# 📊 Notebook EDA - Rapport de Création
+﻿# ðŸ“Š Notebook EDA - Rapport de CrÃ©ation
 
 **Date**: 1 avril 2026  
-**Status**: ✅ COMPLET ET PRÊT À UTILISER
+**Status**: âœ… COMPLET ET PRÃŠT Ã€ UTILISER
 
-## 📋 Fichiers Créés
+## ðŸ“‹ Fichiers CrÃ©Ã©s
 
 ### 1. **eda_analysis.ipynb** 
 Notebook Jupyter complet avec 7 sections d'analyse exploratoire
@@ -11,10 +11,10 @@ Notebook Jupyter complet avec 7 sections d'analyse exploratoire
 **Localisation**: `notebooks/eda_analysis.ipynb`
 
 **Contenu**:
-- ✅ 21 cellules (6 Markdown + 15 Python)
-- ✅ Code exécutable et testable
-- ✅ Génère 8+ visualisations
-- ✅ ~1500 lignes de code + documentation
+- âœ… 21 cellules (6 Markdown + 15 Python)
+- âœ… Code exÃ©cutable et testable
+- âœ… GÃ©nÃ¨re 8+ visualisations
+- âœ… ~1500 lignes de code + documentation
 
 ### 2. **README_EDA.md**
 Guide complet d'utilisation du notebook
@@ -22,11 +22,11 @@ Guide complet d'utilisation du notebook
 **Localisation**: `notebooks/README_EDA.md`
 
 **Contenu**:
-- ✅ Description détaillée de chaque section
-- ✅ Instructions d'installation et lancement
-- ✅ Interprétation des résultats
-- ✅ Guide de troubleshooting
-- ✅ Cas d'usage
+- âœ… Description dÃ©taillÃ©e de chaque section
+- âœ… Instructions d'installation et lancement
+- âœ… InterprÃ©tation des rÃ©sultats
+- âœ… Guide de troubleshooting
+- âœ… Cas d'usage
 
 ### 3. **run_eda_notebook.bat**
 Script de lancement pour Windows
@@ -37,40 +37,40 @@ Script de lancement pour Windows
 run_eda_notebook.bat
 ```
 
-### 4. **run_eda_notebook.sh**
+### 4. **scripts/shell/run_eda_notebook.sh**
 Script de lancement pour Linux/Mac
 
 **Utilisation**:
 ```bash
-bash run_eda_notebook.sh
+bash scripts/shell/run_eda_notebook.sh
 ```
 
-## 📊 Sections du Notebook
+## ðŸ“Š Sections du Notebook
 
 ### Section 1: Charger et Explorer
-- Importe les dépendances
-- Charge les données depuis le Data Lake
+- Importe les dÃ©pendances
+- Charge les donnÃ©es depuis le Data Lake
 - Affiche les infos de base
 
-### Section 2: Données Manquantes
+### Section 2: DonnÃ©es Manquantes
 - Calcule le % manquant par colonne
-- Génère 2 visualisations
-- **Tableau récapitulatif**
+- GÃ©nÃ¨re 2 visualisations
+- **Tableau rÃ©capitulatif**
 
 ### Section 3: Valeurs Aberrantes
-- Détecte les outliers (méthode IQR)
+- DÃ©tecte les outliers (mÃ©thode IQR)
 - Calcule le % aberrant par colonne
 - **Boxplots pour chaque colonne**
 
-### Section 4: Matrice de Corrélation
-- Corrélation de Pearson
-- Identifie corrélations fortes
-- **Tableau des corrélations**
+### Section 4: Matrice de CorrÃ©lation
+- CorrÃ©lation de Pearson
+- Identifie corrÃ©lations fortes
+- **Tableau des corrÃ©lations**
 
 ### Section 5: Heatmap
 - Visualise la matrice
-- Codes couleur: rouge (positif) ↔ bleu (négatif)
-- **Graphique heatmap annoté**
+- Codes couleur: rouge (positif) â†” bleu (nÃ©gatif)
+- **Graphique heatmap annotÃ©**
 
 ### Section 6: Diagrammes d'Analyse
 - Histogrammes des distributions
@@ -78,14 +78,14 @@ bash run_eda_notebook.sh
 - Diagramme comparatif manquantes vs aberrantes
 - **3 graphiques complets**
 
-### Section 7: Résumé & Recommandations
-- Synthèse global de qualité
-- Listes des problèmes
+### Section 7: RÃ©sumÃ© & Recommandations
+- SynthÃ¨se global de qualitÃ©
+- Listes des problÃ¨mes
 - **5 recommandations d'actions**
 
-## 🚀 Démarrage Rapide
+## ðŸš€ DÃ©marrage Rapide
 
-### Option 1: Windows (Recommandé)
+### Option 1: Windows (RecommandÃ©)
 ```bash
 # Double-cliquez sur:
 run_eda_notebook.bat
@@ -103,31 +103,31 @@ jupyter lab notebooks/eda_analysis.ipynb
 ### Option 3: VS Code
 1. Ouvrir `notebooks/eda_analysis.ipynb`
 2. Cliquer sur "Run All"
-3. Ou exécuter cellule par cellule
+3. Ou exÃ©cuter cellule par cellule
 
-## 📈 Outputs du Notebook
+## ðŸ“ˆ Outputs du Notebook
 
-### Graphiques Générés
-1. ✅ Pourcentage manquant par colonne (horizontal bar)
-2. ✅ Niveau de complétude (vertical bar)
-3. ✅ Boxplots (n colonnes numériques)
-4. ✅ Heatmap de corrélation
-5. ✅ Histogrammes des distributions
-6. ✅ Diagramme comparatif manquantes/aberrantes
-7. ✅ Tableaux statistiques détaillés
+### Graphiques GÃ©nÃ©rÃ©s
+1. âœ… Pourcentage manquant par colonne (horizontal bar)
+2. âœ… Niveau de complÃ©tude (vertical bar)
+3. âœ… Boxplots (n colonnes numÃ©riques)
+4. âœ… Heatmap de corrÃ©lation
+5. âœ… Histogrammes des distributions
+6. âœ… Diagramme comparatif manquantes/aberrantes
+7. âœ… Tableaux statistiques dÃ©taillÃ©s
 
 ### Tableaux EDA
-- **Données Manquantes**: Colonne | Comptage | % | Total
+- **DonnÃ©es Manquantes**: Colonne | Comptage | % | Total
 - **Aberrantes**: Colonne | Comptage | % | Total
-- **Corrélations**: Variable1 | Variable2 | Valeur
-- **Matrice de Corrélation**: Pearson complete
+- **CorrÃ©lations**: Variable1 | Variable2 | Valeur
+- **Matrice de CorrÃ©lation**: Pearson complete
 
-## 🎯 Métriques Calculées
+## ðŸŽ¯ MÃ©triques CalculÃ©es
 
 ### Manquantes
 ```
-% Manquantes par colonne = (Valeurs NaN / Total) × 100
-% Global = (Total NaN / Total Cellules) × 100
+% Manquantes par colonne = (Valeurs NaN / Total) Ã— 100
+% Global = (Total NaN / Total Cellules) Ã— 100
 ```
 
 ### Aberrantes (IQR)
@@ -135,40 +135,40 @@ jupyter lab notebooks/eda_analysis.ipynb
 Q1 = Quartile 1 (25%)
 Q3 = Quartile 3 (75%)
 IQR = Q3 - Q1
-Min limite = Q1 - 1.5 × IQR
-Max limite = Q3 + 1.5 × IQR
+Min limite = Q1 - 1.5 Ã— IQR
+Max limite = Q3 + 1.5 Ã— IQR
 Aberrante = Valeur < Min ou Valeur > Max
 ```
 
-### Corrélation (Pearson)
+### CorrÃ©lation (Pearson)
 ```
-r = Σ((x - x̄)(y - ȳ)) / √[Σ(x - x̄)² × Σ(y - ȳ)²]
-Range: -1 (parfait négatif) à +1 (parfait positif)
+r = Î£((x - xÌ„)(y - È³)) / âˆš[Î£(x - xÌ„)Â² Ã— Î£(y - È³)Â²]
+Range: -1 (parfait nÃ©gatif) Ã  +1 (parfait positif)
 ```
 
-## 💡 Recommandations d'Utilisation
+## ðŸ’¡ Recommandations d'Utilisation
 
 ### Avant la Transformation
-✅ Lancez EDA pour identifier:
-- Colonnes à nettoyer en priorité
-- Stratégie d'imputation optimale
-- Valeurs à corriger/supprimer
+âœ… Lancez EDA pour identifier:
+- Colonnes Ã  nettoyer en prioritÃ©
+- StratÃ©gie d'imputation optimale
+- Valeurs Ã  corriger/supprimer
 
 ### Avant le Machine Learning
-✅ Vérifiez:
-- Multicollinéarité (corrélations > 0.9)
-- Distribution des données
-- Données aberrantes problématiques
+âœ… VÃ©rifiez:
+- MulticollinÃ©aritÃ© (corrÃ©lations > 0.9)
+- Distribution des donnÃ©es
+- DonnÃ©es aberrantes problÃ©matiques
 
 ### Pour la Documentation
-✅ Exportez en PDF/HTML:
-- Rapport de qualité
+âœ… Exportez en PDF/HTML:
+- Rapport de qualitÃ©
 - Partager avec stakeholders
 - Archiver dans la documentation
 
-## 🔧 Configuration Personnalisée
+## ðŸ”§ Configuration PersonnalisÃ©e
 
-### Charger Vos Données
+### Charger Vos DonnÃ©es
 Modifiez la cellule 4:
 ```python
 # CSV
@@ -181,10 +181,10 @@ df = pd.read_json('monFichier.json')
 df = pd.read_excel('monFichier.xlsx')
 ```
 
-### Seuils Personnalisés
+### Seuils PersonnalisÃ©s
 Modifiez les cellules:
 ```python
-# Corrélations fortes
+# CorrÃ©lations fortes
 if abs(corr_val) > 0.7:  # Changer 0.7
 
 # Aberrantes
@@ -192,34 +192,34 @@ def detect_outliers_iqr(data):
     # ... modifier IQR multiplier (1.5)
 ```
 
-## ✅ Vérification Post-Installation
+## âœ… VÃ©rification Post-Installation
 
 ```bash
-# Vérifier que le notebook peut être lu
+# VÃ©rifier que le notebook peut Ãªtre lu
 jupyter nbconvert --to script notebooks/eda_analysis.ipynb
 
-# Vérifier les dépendances
+# VÃ©rifier les dÃ©pendances
 python -c "import pandas, matplotlib, seaborn; print('OK')"
 ```
 
-## 📚 Ressources Supplémentaires
+## ðŸ“š Ressources SupplÃ©mentaires
 
 voir `README_EDA.md` pour:
-- Interpretations détaillées
-- Exemples de résultats
-- Formules mathématiques
-- Références externes
+- Interpretations dÃ©taillÃ©es
+- Exemples de rÃ©sultats
+- Formules mathÃ©matiques
+- RÃ©fÃ©rences externes
 
-## 🎓 Apprentissage
+## ðŸŽ“ Apprentissage
 
 Le notebook utilise:
-- **Pandas**: Manipulation de données
-- **NumPy**: Calculs numériques
+- **Pandas**: Manipulation de donnÃ©es
+- **NumPy**: Calculs numÃ©riques
 - **Matplotlib**: Visualisations basiques
-- **Seaborn**: Visualisations avancées
+- **Seaborn**: Visualisations avancÃ©es
 - **SciPy**: Analyse statistique
 
-## 📞 Support
+## ðŸ“ž Support
 
 ### Erreurs Courantes
 
@@ -229,25 +229,27 @@ pip install pandas numpy matplotlib seaborn jupyter
 ```
 
 **"No such file found"**
-→ Vérifier que `notebooks/` existe
-→ Lancer depuis la racine du projet
+â†’ VÃ©rifier que `notebooks/` existe
+â†’ Lancer depuis la racine du projet
 
 **"Graphs not showing"**
-→ Ajouter `%matplotlib inline` en cellule 1
+â†’ Ajouter `%matplotlib inline` en cellule 1
 
-## 🏆 Qualité
+## ðŸ† QualitÃ©
 
-- ✅ Code professionnel (PEP8)
-- ✅ Commente détaillé
-- ✅ Gestion d'erreurs
-- ✅ Visualisations claires
-- ✅ Résultats exploitable
-- ✅ Documentation complète
+- âœ… Code professionnel (PEP8)
+- âœ… Commente dÃ©taillÃ©
+- âœ… Gestion d'erreurs
+- âœ… Visualisations claires
+- âœ… RÃ©sultats exploitable
+- âœ… Documentation complÃ¨te
 
 ---
 
-**Status**: ✅ Production Ready  
-**Test**: ✅ Code Syntax Valid  
-**Docs**: ✅ Complètement Documenté  
+**Status**: âœ… Production Ready  
+**Test**: âœ… Code Syntax Valid  
+**Docs**: âœ… ComplÃ¨tement DocumentÃ©  
 
-Prêt à analyser vos données! 🎉
+PrÃªt Ã  analyser vos donnÃ©es! ðŸŽ‰
+
+

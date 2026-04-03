@@ -1,9 +1,9 @@
-# Project Manifest - File Reference Guide
+﻿# Project Manifest - File Reference Guide
 
 **Last Updated:** Session 8 - Project Reorganization Complete
 **Total Files:** ~100+ core + venv + __pycache__
 
-## 📋 Quick Navigation
+## ðŸ“‹ Quick Navigation
 
 - [Root Level](#root-level)
 - [Configuration](#configuration)
@@ -20,11 +20,11 @@
 
 | File | Purpose | Status |
 |------|---------|--------|
-| `app.py` | **Main Streamlit dashboard entry point** | ✅ Production |
-| `README.md` | **Comprehensive tutorial & documentation** | ✅ Production |
-| `QUICK_START.txt` | **3-step 5-minute setup guide** | ✅ Production |
-| `MANIFEST.md` | This file - project file reference | ✅ Reference |
-| `requirements.txt` | Python package dependencies | ✅ Production |
+| `app.py` | **Main Streamlit dashboard entry point** | âœ… Production |
+| `README.md` | **Comprehensive tutorial & documentation** | âœ… Production |
+| `docs/QUICK_START.txt` | **3-step 5-minute setup guide** | âœ… Production |
+| `docs/MANIFEST.md` | This file - project file reference | âœ… Reference |
+| `requirements.txt` | Python package dependencies | âœ… Production |
 
 ### Configuration Files
 
@@ -38,9 +38,9 @@
 
 | File | Reason | Status |
 |------|--------|--------|
-| `app_BACKUP.py` | Old app version | ❌ Deleted (Session 8) |
-| `README_BACKUP.md` | Old README | ❌ Deleted (Session 8) |
-| 60+ legacy files | Cleanup complete | ❌ Deleted (Session 8) |
+| `app_BACKUP.py` | Old app version | âŒ Deleted (Session 8) |
+| `README_BACKUP.md` | Old README | âŒ Deleted (Session 8) |
+| 60+ legacy files | Cleanup complete | âŒ Deleted (Session 8) |
 
 ---
 
@@ -170,7 +170,7 @@ class LightningDashboard:
 | `setup_database.py` | Initialize database with schema | `python scripts/setup_database.py` |
 | `refresh_data.py` | Fetch data from all APIs | `python scripts/refresh_data.py` |
 | `populate_demo.py` | Load 6 demo lightning records | `python scripts/populate_demo.py` |
-| `verify_data.py` | Print current data counts | `python scripts/verify_data.py` |
+| `scripts/diagnostics/verify_data.py` | Print current data counts | `python scripts/diagnostics/verify_data.py` |
 | `reset_data.py` | Clear all data (preserve schema) | `python scripts/reset_data.py` |
 | `__init__.py` | Makes scripts a Python package | (Internal) |
 
@@ -185,7 +185,7 @@ python scripts/populate_demo.py
 python scripts/refresh_data.py
 
 # 3. Verify data loaded
-python scripts/verify_data.py
+python scripts/diagnostics/verify_data.py
 
 # 4. Run dashboard
 streamlit run app.py
@@ -308,7 +308,7 @@ ENVIRONMENT=dev
 | **Add logging** | `src/utils/logger.py` | `setup_logging()` |
 | **Access database** | `src/database/warehouse.py` | `DataWarehouse` class |
 | **Understand architecture** | `README.md` | Full documentation |
-| **Quick start** | `QUICK_START.txt` | 3-step setup |
+| **Quick start** | `docs/QUICK_START.txt` | 3-step setup |
 
 ---
 
@@ -325,13 +325,15 @@ ENVIRONMENT=dev
 ## Support
 
 - **Documentation:** See `README.md`
-- **Quick Setup:** See `QUICK_START.txt`
+- **Quick Setup:** See `docs/QUICK_START.txt`
 - **Issues:** Check `logs/app.log`
 - **Code Structure:** This file + docstrings in source
 
 ---
 
-**Project Status:** ✅ Production Ready
+**Project Status:** âœ… Production Ready
 **Last Testing:** Session 8 - All systems verified
 **Next Steps:** Deploy or extend with new features
+
+
 
